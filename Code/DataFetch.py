@@ -1,5 +1,5 @@
 # import libraries
-import requests
+# import requests
 import pandas as pd
 import os
 
@@ -8,10 +8,10 @@ if os.getcwd().split("/")[-1] == "Code":
     os.chdir("..")
 curr_dir = os.getcwd()
 
-# If an output directory does not already exist, create one
+# If data directory does not already exist, create one
 if not os.path.isdir("Data"):
     os.mkdir("Data")
-data_dir = curr_dir + "/Data"
+data_dir = curr_dir + "/Data/"
 
 # 1. Option: full historic data from github
 # A. All countries and US total
@@ -46,10 +46,3 @@ df_us = df_us[df_us['Province_State'].isin(county_list)]
 
 # save data
 df_us.to_csv(data_dir + 'USCovidData.csv', sep=';', index=False)
-
-# 2. Option: specific historic data from hopkins
-
-api_response = requests.get('https://covid19api.herokuapp.com/confirmed')
-
-# get latest data for location ID 16: Austria
-total_cases_aut = api_response.json()['locations'][16]['history']
