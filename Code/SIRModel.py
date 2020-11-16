@@ -38,6 +38,17 @@ def est_sir(N, i_0, r_0, R0, gamma, t):
     SIR = pd.DataFrame({'S': S, 'I': I, 'R': R, 'Days': np.arange(0, len(t))})
     return SIR
 
+def est_sir_multi_r0(params, r0_vec):
+    SIRs = []
+    new_params = params
+    for i in r0_vec:
+        new_params['R0'] = i
+        SIR = est_sir(**new_params)
+        SIR['R0'] = i
+        SIRs.append(SIR)
+    SIRs = pd.concat(SIRs)
+    return SIRs
+
 
 # Dynamic function
 # Function arguments:

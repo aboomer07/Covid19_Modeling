@@ -26,4 +26,14 @@ def plot_sir(SIR, country):
     plt.savefig(output_dir + "SIR_plot_" + country + ".png")
     plt.close()
 
+def plot_multiple_sir(SIR, country):
+    SIR_long = SIR.melt(
+        id_vars=['Days', 'R0'], value_vars=['S', 'I', 'R'], value_name='Number of People', var_name='Status')
+    fig, ax = plt.subplots(ncols=1, nrows=1)
+    sns.lineplot(data=SIR_long, x='Days', y='Number of People', hue='Status', style= 'R0', ax=ax)
+    ax.set_title('SIR Model ' + country)
+    plt.legend(loc='upper right')
+    plt.savefig(output_dir + "SIR_plot_multiple_R0_" + country + ".png")
+    plt.close()
+
 
