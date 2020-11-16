@@ -20,10 +20,10 @@ df = pd.read_csv(data_dir + 'EuropeCovidData.csv', sep=';')
 def get_params(country, startdate, data):
     params = {
         'N': int(wb.get_series('SP.POP.TOTL', mrv=1, country=coco.convert(country, to='ISO3'))),
-        'I0': int(data[(data['Country/Region'] == country) &
+        'i_0': int(data[(data['Country/Region'] == country) &
                        (data['date'] == startdate)]['confirmed']),
-        'R0': 0,  # need more data to specify
-        'beta': 0.2,  # derive this from data
+        'r_0': 0,  # need more data to specify
+        'R0': 1.6,  # derive this from data
         'gamma': 0.1,  # derive this from data
         't': np.linspace(0, 160, 160)
     }

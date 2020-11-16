@@ -17,7 +17,7 @@ output_dir = curr_dir + "/Output/"
 
 # Plot the data on three separate curves for S(t), I(t) and R(t)
 
-def plot_sir(SIR, country, params):
+def plot_sir(SIR, country):
     SIR_long = SIR.melt(
         id_vars=['Days'], value_vars=['S', 'I', 'R'], value_name='Number of People', var_name='Status')
     fig, ax = plt.subplots(ncols=1, nrows=1)
