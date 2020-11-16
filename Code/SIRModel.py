@@ -5,9 +5,9 @@ import numpy as np
 
 # Function arguments:
 # N = total population
-# I0 = initial number of infected
-# R0 = initial number of recovered
-# beta = contact rate (beta = Rt*gamma)
+# i_0 = initial number of infected
+# r_0 = initial number of recovered
+# beta = contact rate (beta = R0*gamma)
 # gamma = mean recovery rate
 # t = grid of time points in days
 
@@ -20,7 +20,7 @@ def est_sir(N, i_0, r_0, R0, gamma, t):
     beta = R0*gamma
 
     # Everyone else, S0, is susceptible to infection initially.
-    S0 = N - i_0 - r_0
+    s_0 = N - i_0 - r_0
 
     # The SIR model differential equations.
     def deriv(y, t, N, beta, gamma):
@@ -31,7 +31,7 @@ def est_sir(N, i_0, r_0, R0, gamma, t):
         return dSdt, dIdt, dRdt
 
     # Initial conditions vector
-    y0 = S0, i_0, r_0
+    y0 = s_0, i_0, r_0
     # Integrate the SIR equations over the time grid, t.
     ret = odeint(deriv, y0, t, args=(N, beta, gamma))
     S, I, R = ret.T

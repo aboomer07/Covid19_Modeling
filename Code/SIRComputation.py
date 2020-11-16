@@ -5,8 +5,8 @@ from Code.SIRParams import *
 from Code.SIRPlot import *
 
 # get parameters
-aut = get_params('Austria', '2020-05-10', df)
-ita = get_params('Italy', '2020-03-10', df)
+aut = get_params('Austria', '2020-05-10', df, 160)
+ita = get_params('Italy', '2020-03-10', df, 160)
 
 # static versions
 SIR_aut = est_sir(**aut)

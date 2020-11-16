@@ -17,7 +17,7 @@ data_dir = curr_dir + "/Data/"
 df = pd.read_csv(data_dir + 'EuropeCovidData.csv', sep=';')
 
 
-def get_params(country, startdate, data):
+def get_params(country, startdate, data, timespan):
     params = {
         'N': int(wb.get_series('SP.POP.TOTL', mrv=1, country=coco.convert(country, to='ISO3'))),
         'i_0': int(data[(data['Country/Region'] == country) &
@@ -25,6 +25,6 @@ def get_params(country, startdate, data):
         'r_0': 0,  # need more data to specify
         'R0': 1.6,  # derive this from data
         'gamma': 0.1,  # derive this from data
-        't': np.linspace(0, 160, 160)
+        't': np.linspace(0, timespan, timespan)
     }
     return params
