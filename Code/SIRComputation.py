@@ -4,25 +4,31 @@ from Code.SIRModel import *
 from Code.SIRParams import *
 from Code.SIRPlot import *
 
+country_list = df['Country/Region'].unique()
+
 # get parameters
-aut = get_params('Austria', '2020-03-30', df, 300)
-ita = get_params('Italy', '2020-03-10', df, 160)
+params = []
+for country in country_list:
+    param = get_params(country, '2020-03-15', df, 300)
+    params.append(param)
 
 # static versions
-SIR_aut = est_sir(**aut)
-plot_sir(SIR_aut, aut, 'Austria')
+for country_params, country in zip(params, country_list):
+    SIR = est_sir(**country_params)
+    plot_sir(SIR, country_params, country)
 
 # static version multiple R0
 R0_vec = [1.6, 3, 6]
 
-SIRs_aut = est_sir_multi_r0(aut, R0_vec)
-plot_multiple_sir(SIRs_aut, aut, 'Austria')
+for country_params, country in zip(params, country_list):
+    SIR = est_sir_multi_r0(country_params, R0_vec)
+    plot_multiple_sir(SIR, country_params, country)
 
 # dynamic versions (changing R0 over time)
 # dynamic = False gives equivalent result to est_sir :)
-SIR_aut_dyn = est_sir_dyn(**aut, dynamic=True)
-plot_sir(SIR_aut_dyn, aut, 'Austria_Dyn')
-plot_i(SIR_aut_dyn, aut, 'Austria_Dny_Infected')  # plot only infected
+# SIR_aut_dyn = est_sir_dyn(**aut, dynamic=True)
+# plot_sir(SIR_aut_dyn, aut, 'Austria_Dyn')
+# plot_i(SIR_aut_dyn, aut, 'Austria_Dny_Infected')  # plot only infected
 
 
 ################################################################################
