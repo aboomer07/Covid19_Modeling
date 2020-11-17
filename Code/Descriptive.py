@@ -51,10 +51,11 @@ df_event_aut['date'] = pd.to_datetime(df_event_aut['date'])
 R0s_event_aut['date'] = pd.to_datetime(R0s_event_aut['date'])
 
 # new infections daily
+df['delta'] = df['confirmed'].diff()
 df_event_aut['delta'] = df_event_aut['confirmed'].diff()
 
 
-# 1. Plot: confirmed cases by country
+# 1a. Plot: confirmed cases by country
 
 fig, ax = plt.subplots(ncols=1, nrows=1)
 sns.lineplot(data=df, x='date', y='confirmed', hue='Country/Region', ax=ax)
@@ -62,6 +63,17 @@ ax.set_title('Confirmed Covid-19 Cases by Country')
 fig.set_size_inches(18.5, 10.5)
 plt.savefig(output_dir + 'CasesByCountry.png')
 plt.close()
+
+# 1b. Plot: daily new cases by country
+fig, ax = plt.subplots(ncols=1, nrows=1)
+sns.lineplot(data=df, x='date', y='delta', hue='Country/Region', ax=ax)
+ax.set_title('Daily New Covid-19 Cases by Country')
+fig.set_size_inches(18.5, 10.5)
+plt.savefig(output_dir + 'DailyCasesByCountry.png')
+plt.close()
+
+
+
 
 # 2. Plot: empirical R0, RKI method
 
