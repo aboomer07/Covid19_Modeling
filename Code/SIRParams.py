@@ -15,14 +15,14 @@ curr_dir = os.getcwd()
 data_dir = curr_dir + "/Data/"
 
 europe = input("Do you want to input European data? True or False: ")
-us = input("Do you want to input US County Level Data? True of False: ")
+us = input("Do you want to input US County Level Data? True or False: ")
 
 if europe:
     df = pd.read_csv(data_dir + 'EuropeCovidData.csv', sep=';')
 
-if us:
-    df_us = pd.read_csv(data_dir + "county_data.csv", sep=",")
-    df_us['countyFIPS'] = df_us['countyFIPS'].astype(str).str.zfill(5)
+# if us:
+#     df_us = pd.read_csv(data_dir + "county_data.csv", sep=",")
+#     df_us['countyFIPS'] = df_us['countyFIPS'].astype(str).str.zfill(5)
 
 
 def get_params(country, startdate, data, timespan):
@@ -32,7 +32,7 @@ def get_params(country, startdate, data, timespan):
                         (data['date'] == startdate)]['confirmed']),
         'r_0': 0,  # need more data to specify
         'R0': 1.6,  # derive this from data
-        'gamma': 0.1,  # derive this from data
+        'gamma': 1/18,  # based on Atkenson's note for now
         't': np.linspace(0, timespan, timespan)
     }
     return params
@@ -61,7 +61,8 @@ def get_params_us(counties, startdate, data, timespan):
         'i_0': int(data[(data['countyFIPS'].isin(counties)) & (data['Date'] == startdate)]['confirmed'].sum()),
         'r_0': 0,
         'R0': 1.6,
-        'gamma': 0.1,
+        'gamma': 1/18,  # based on Atkenson's note for now
         't': np.linspace(0, timespan, timespan)
     }
     return params
+

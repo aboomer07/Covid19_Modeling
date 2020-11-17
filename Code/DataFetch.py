@@ -28,6 +28,10 @@ df['date'] = pd.to_datetime(df['date'], format="%m/%d/%y")
 country_list = ['Austria', 'Germany', 'France', 'Italy', 'US']
 df = df[df['Country/Region'].isin(country_list)]
 
+# french regions are not of interest
+df = df.groupby(['Country/Region', 'date'])['confirmed'].sum().reset_index()
+
+
 # save csv
 df.to_csv(data_dir + 'EuropeCovidData.csv', sep=';', index=False)
 

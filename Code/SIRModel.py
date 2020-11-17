@@ -58,8 +58,8 @@ def est_sir_multi_r0(params, r0_vec):
 # t is time (scalar)
 # !! R0 is effective transmission rate, defaulting to constant
 
-# R0 changing over time (starting at 3 and going down to 1.6 at a rate of 0.1)
-def r0_dyn(t, r0=3, mu=0.1, r_bar=1.6):
+# R0 changing over time (starting at 1.5 and going down to 1.1 at a rate of 0.1)
+def r0_dyn(t, r0=1.5, mu=0.06, r_bar=1.1):
     R0 = r0 * np.exp(- mu * t) + (1 - np.exp(- mu * t)) * r_bar
     return R0
 
