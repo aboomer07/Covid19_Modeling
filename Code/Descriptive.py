@@ -8,6 +8,8 @@ import seaborn as sns
 import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
+import world_bank_data as wb
+import country_converter as coco
 
 
 from Code.DataFunc import *
@@ -34,6 +36,13 @@ df_event_aut = df[df['Country/Region'] == 'Austria'].merge(events, on='date', ho
 
 country_list = df['Country/Region'].unique()
 
+pop = []
+for country in country_list:
+    n = int(wb.get_series('SP.POP.TOTL', mrv=1, country=coco.convert(country, to='ISO3')))
+    pop.append(n)
+
+pop = pd.DataFrame({'Country/Region': country_list, 'N': pop})
+
 R0s = []
 for country in country_list:
     R0 = get_R0(country, df)
@@ -43,6 +52,8 @@ R0s = pd.concat(R0s)
 R0s = R0s.replace([np.inf, -np.inf], np.nan)
 R0s = R0s[R0s['R0'].notna()]
 
+df = df.merge(pop, on='Country/Region', how='left')
+
 R0s_event_aut = R0s[R0s['Country/Region'] == 'Austria'].merge(events, on='date', how='left')
 
 df['date'] = pd.to_datetime(df['date'])
@@ -51,8 +62,11 @@ df_event_aut['date'] = pd.to_datetime(df_event_aut['date'])
 R0s_event_aut['date'] = pd.to_datetime(R0s_event_aut['date'])
 
 # new infections daily
-df['delta'] = df['confirmed'].diff()
+df['delta'] = df.groupby('Country/Region')['confirmed'].diff()
 df_event_aut['delta'] = df_event_aut['confirmed'].diff()
+
+# percentage of pop
+df['perc'] = df['confirmed']/df['N']
 
 
 # 1a. Plot: confirmed cases by country
@@ -66,10 +80,19 @@ plt.close()
 
 # 1b. Plot: daily new cases by country
 fig, ax = plt.subplots(ncols=1, nrows=1)
-sns.lineplot(data=df, x='date', y='delta', hue='Country/Region', ax=ax)
+sns.lineplot(data=df[df['date'] > '2020-03-15'], x='date', y='delta', hue='Country/Region', ax=ax)
 ax.set_title('Daily New Covid-19 Cases by Country')
 fig.set_size_inches(18.5, 10.5)
 plt.savefig(output_dir + 'DailyCasesByCountry.png')
+plt.close()
+
+
+# 1c. Plot: percentage of pop cases by country
+fig, ax = plt.subplots(ncols=1, nrows=1)
+sns.lineplot(data=df[df['date'] > '2020-03-15'], x='date', y='perc', hue='Country/Region', ax=ax)
+ax.set_title('Relative number of confirmed cases as population percentage by country')
+fig.set_size_inches(18.5, 10.5)
+plt.savefig(output_dir + 'PercCasesByCountry.png')
 plt.close()
 
 
@@ -138,7 +161,7 @@ fig.write_html(output_dir + "DeltaCasesEvents.html")
 
 # R0 interactive with events
 # restrict to smaller time period to account for unrealistic R0 in first few days
-R0s_event_aut = R0s_event_aut[R0s_event_aut['date'] > '2020-03-30']
+R0s_event_aut = R0s_event_aut[R0s_event_aut['date'] > '2020-04-05']
 
 R0s_event_aut_sub = R0s_event_aut[R0s_event_aut['event'].notnull()]
 fig = px.line(R0s_event_aut, x='date', y="R0")

@@ -9,7 +9,7 @@ country_list = df['Country/Region'].unique()
 # get parameters
 params = []
 for country in country_list:
-    param = get_params(country, '2020-03-15', df, 300)
+    param = get_params(country, '2020-03-20', df, 350)
     params.append(param)
 
 # static versions

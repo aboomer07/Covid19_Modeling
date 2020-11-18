@@ -24,7 +24,7 @@ def est_sir(N, i_0, r_0, R0, gamma, t):
     s_0 = N - i_0 - r_0
 
     # The SIR model differential equations.
-    def deriv(y, t, N, beta, gamma):
+    def F(y, t, N, beta, gamma):
         S, I, R = y
         dSdt = -beta * S * I / N
         dIdt = beta * S * I / N - gamma * I
@@ -34,7 +34,7 @@ def est_sir(N, i_0, r_0, R0, gamma, t):
     # Initial conditions vector
     y0 = s_0, i_0, r_0
     # Integrate the SIR equations over the time grid, t.
-    ret = odeint(deriv, y0, t, args=(N, beta, gamma))
+    ret = odeint(F, y0, t, args=(N, beta, gamma))
     S, I, R = ret.T / N
     SIR = pd.DataFrame({'S': S, 'I': I, 'R': R, 'Days': np.arange(0, len(t))})
     return SIR
