@@ -33,7 +33,7 @@ def get_params(country, startdate, data, timespan):
         'r_0': 0,  # need more data to specify
         'R0': 1.6,  # derive this from data
         'gamma': 1/18,  # based on Atkenson's note for now
-        't': np.linspace(0, timespan, timespan)
+        't': np.linspace(0, timespan, timespan),
     }
     return params
 

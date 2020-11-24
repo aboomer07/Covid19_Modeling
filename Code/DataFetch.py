@@ -35,7 +35,7 @@ df = df.groupby(['Country/Region', 'date'])['confirmed'].sum().reset_index()
 # save csv
 df.to_csv(data_dir + 'EuropeCovidData.csv', sep=';', index=False)
 
-# A. US separate to get county level
+# B. US separate to get county level
 url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv'
 df_us = pd.read_csv(url, sep=',')
 df_us = df_us.drop(['Lat', 'Long_', 'UID', 'iso2', 'iso3', 'code3',

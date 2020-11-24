@@ -49,11 +49,14 @@ def plot_i(SIR, params, country):
 
 def plot_multiple_sir(SIR, params, country):
     SIR_long = SIR.melt(
-        id_vars=['Days', 'R0'], value_vars=['S', 'I', 'R'], value_name='Number of People', var_name='Status')
+        id_vars=['Days', 'R0'], value_vars=['S', 'I', 'R'], value_name='Percentage of Population', var_name='Status')
     fig, ax = plt.subplots(ncols=1, nrows=1)
-    sns.lineplot(data=SIR_long, x='Days', y='Number of People', hue='Status', style= 'R0', ax=ax)
+    sns.lineplot(data=SIR_long, x='Days', y='Percentage of Population', hue='Status', style='R0', ax=ax)
     ax.set_title('SIR Model ' + country)
     ax.annotate('γ: ' + str(round(params['gamma'], 2)), xy=(1, 0), xycoords='axes fraction', fontsize=12,
+                xytext=(-5, 5), textcoords='offset points',
+                ha='right', va='bottom')
+    ax.annotate('I0: ' + str(params['i_0']), xy=(1, 0.03), xycoords='axes fraction', fontsize=12,
                 xytext=(-5, 5), textcoords='offset points',
                 ha='right', va='bottom')
     plt.legend(loc='upper right')
