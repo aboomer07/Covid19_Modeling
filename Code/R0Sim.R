@@ -86,3 +86,55 @@ eval_long <- reshape2::melt(eval, id.vars = 'dates')
 
 ggplot(NULL) +
   geom_line(data = eval_long, aes(x = dates, y=value, color = variable))
+
+#Harvard Estimate
+est_r0_us <- estimate_R(incid=out$y, method='parametric_si',
+	config=make_config(list(mean_si=5.2, std_si=5.1)))[[1]]
+
+est_r0_us <- est_r0_us[c('Mean(R)', 'Std(R)')]
+est_r0_us$dates <- as.Date("2020-02-15") + 7:(100-1)
+
+# put it together
+eval_us <- left_join(Data_R_sim, est_r0_us[c('Mean(R)', 'Std(R)', 'dates')], by = 'dates')
+
+eval_long_us <- reshape2::melt(eval_us, id.vars = 'dates')
+
+
+ggplot(NULL) +
+  geom_line(data = eval_long_us, aes(x = dates, y=value, color = variable))
+
+
+params <- list(list(4.46, 2.63), list(5.2, 5.1))
+
+names(params) <- c('Austria', 'USA')
+
+full_eval <- list()
+
+for (i in 1:length(params)) {
+	mean <- params[[i]][[1]]
+	std <- params[[i]][[2]]
+	est_r0 <- estimate_R(incid=out$y, method='parametric_si', 
+		config=make_config(list(mean_si=mean, std_si=std)))[[1]]
+	est_r0 <- est_r0[c('Mean(R)', 'Std(R)')]
+	names(est_r0) <- c("R_Mean", 'R_Std')
+	est_r0$dates <- as.Date("2020-02-15") + 7:(100-1)
+	eval <- left_join(Data_R_sim, est_r0[c('R_Mean', 'R_Std','dates')], 
+		by = 'dates')
+	eval['lower'] <- eval['R_Mean'] - (1.96 * eval['R_Std'])
+	eval['upper'] <- eval['R_Mean'] + (1.96 * eval['R_Std'])
+	eval$Country <- rep(names(params)[[i]], dim(eval)[[1]])
+	full_eval[[i]] <- eval
+}
+
+df <- do.call(rbind, full_eval)
+
+simplot <- ggplot(data=df) +
+	geom_line(aes(x=dates, y=R_Mean, color='red')) +
+	geom_line(aes(x=dates, y=R_sim, col='blue')) +
+	geom_ribbon(aes(x=dates, ymin=lower, ymax=upper, fill='red'), alpha=0.3) +
+	facet_wrap(~Country, nrow=1) +
+	ylab('Value of R') +
+	scale_fill_identity(name = 'Confidence Interval', guide = 'legend',labels = c('CI')) +
+	scale_colour_manual(name = 'R0 Type', 
+         values =c('red'='red','blue'='blue'), labels = c('Sim R0', 'Est R0'))
+
