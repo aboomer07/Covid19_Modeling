@@ -72,17 +72,37 @@ Data_R_sim <- data.frame(dates=as.Date("2020-02-15") + 0:(n1-1), R_sim=True_val)
 ###################################
 
 # Austrian method
-est_r0 <- estimate_R(incid = out$y, method = 'parametric_si', config = make_config(list(
+est_r0_austr <- estimate_R(incid = out$y, method = 'parametric_si', config = make_config(list(
                   mean_si = 4.46 , std_si = 2.63)))[[1]]
 
-est_r0 <- est_r0[c('Mean(R)', 'Std(R)')]
-est_r0$dates <- as.Date("2020-02-15") + 7:(100-1)
+est_r0_austr <- est_r0_austr[c('Mean(R)', 'Std(R)')]
+est_r0_austr$dates <- as.Date("2020-02-15") + 7:(100-1)
+est_r0_austr <- est_r0_austr %>%
+  rename(R_austr = "Mean(R)")
 
 # put it together
-eval <- left_join(Data_R_sim, est_r0[c('Mean(R)', 'dates')], by = 'dates')
+eval <- left_join(Data_R_sim, est_r0_austr[c('R_austr', 'dates')], by = 'dates')
 
 eval_long <- reshape2::melt(eval, id.vars = 'dates')
 
+ggplot(NULL) +
+  geom_line(data = eval_long, aes(x = dates, y=value, color = variable))
 
+
+
+# German method
+
+# R0 with serial time of 4 days
+r0_ger <- rep(NA, nrow(out))
+for (t in 8:nrow(out)) {
+ r0_ger[t] <- sum(out$y[t-0:3]) / sum(out$y[t-4:7])
+}
+r0_ger <- data.frame(r0_ger)
+
+
+# bind to evaluation dataframe
+eval <- eval %>% bind_cols(r0_ger$r0_ger) %>% rename(r0_ger = ...4)
+
+eval_long <- reshape2::melt(eval, id.vars = 'dates')
 ggplot(NULL) +
   geom_line(data = eval_long, aes(x = dates, y=value, color = variable))
