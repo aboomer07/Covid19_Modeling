@@ -3,6 +3,8 @@ library(EpiEstim)
 library(R0)
 library(dplyr)
 library(ggplot2)
+library(accelerometry)
+library(tidyverse)
 
 ###################################
 ########## Simulating R0 ##########
@@ -96,17 +98,19 @@ for (t in 8:nrow(out)) {
  r0_ger[t] <- sum(out$y[t-0:3]) / sum(out$y[t-4:7])
 }
 r0_ger <- data.frame(r0_ger)
-
+dates <- as.Date("2020-02-15") + 7:(100-1)
+dates <- data.frame(dates)
 # bind to evaluation dataframe
-eval <- eval %>% bind_cols(r0_ger$r0_ger) %>% rename(r0_ger = ...4)
+r0_ger <- left_join(Data_R_sim, r0_ger[c('r0_ger', 'dates')], by = 'dates')
+
 
 eval_long <- reshape2::melt(eval, id.vars = 'dates')
 ggplot(NULL) +
   geom_line(data = eval_long, aes(x = dates, y=value, color = variable)
 
 
-params <- list(list(4.46, 2.63), list(5.2, 5.1))
-names(params) <- c('Austria', 'USA')
+params <- list(list(4.46, 2.63), list(5.2, 5.1), list(4, 4))
+names(params) <- c('Austria', 'USA', 'France')
 
 full_eval <- list()
 
@@ -164,7 +168,9 @@ r0_ita$dates[t-6] <- out$Date[t]
 }
 
 r0_ita$dates = as.Date(r0_ita$dates)
-evalita <- left_join(Data_R_sim, r0_ita[c('r0_ita', 'dates')], left.by = 'dates')
+evalita <- left_join(Data_R_sim, r0_ita[c('r0_ita', 'dates')], 
+  left.by = 'dates')
+names(evalita) <- c("dates", "R_sim", "R_Mean")
 
 ggplot(NULL) +
   geom_line(data = evalita, aes(x = dates, y=r0_ita, color = r0_ita))
