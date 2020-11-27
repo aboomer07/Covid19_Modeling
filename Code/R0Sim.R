@@ -138,3 +138,34 @@ simplot <- ggplot(data=df) +
   scale_colour_manual(name = 'R0 Type', 
     values =c('red'='red','blue'='blue'), labels = c('Sim R0', 'Est R0')))
 
+# Italian method
+#R0 with rolling window 5 
+#Notice that window = 5 is for the MA calculation, 
+#while window_interval should 
+#represent the generation time, which we take to be 4
+
+out$tot <- function(t) out$y 
+r0_itafun <- function(ts, window_interval) {
+  data1 <- accelerometry::movingaves(ts, window=5)
+  names(data1) <- names(ts)[3:(length(ts)-2)]
+  res <- sapply( (1+window_interval):length(data1), function(t) {
+    data1[t]/data1[t-window_interval]
+  })
+  return(res)
+}
+
+r0_ita <- r0_itafun(out$y, 4)
+r0_ita <- data.frame(r0_ita) #Length of 92 since res only starts at 5th observation and MA window is +-2 
+
+out$Date = as.character(out$Date)
+
+for (t in 7:(length(out$Date)-2)){
+r0_ita$dates[t-6] <- out$Date[t]
+}
+
+r0_ita$dates = as.Date(r0_ita$dates)
+evalita <- left_join(Data_R_sim, r0_ita[c('r0_ita', 'dates')], left.by = 'dates')
+
+ggplot(NULL) +
+  geom_line(data = evalita, aes(x = dates, y=r0_ita, color = r0_ita))
+
