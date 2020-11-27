@@ -101,8 +101,7 @@ r0_ger <- data.frame(r0_ger)
 # bind to evaluation dataframe
 r0_ger <- cbind(Data_R_sim, r0_ger)
 
-
-eval_long <- reshape2::melt(eval, id.vars = 'dates')
+eval_long <- reshape2::melt(r0_ger, id.vars = 'dates')
 ggplot(NULL) +
   geom_line(data = eval_long, aes(x = dates, y=value, color = variable)
 
@@ -170,6 +169,16 @@ evalita <- left_join(Data_R_sim, r0_ita[c('r0_ita', 'dates')],
   left.by = 'dates')
 names(evalita) <- c("dates", "R_sim", "R_Mean")
 
+names(r0_ger) <- c("dates", "R_sim", "R_Mean")
+r0_ger$Country <- rep("Germany", dim(r0_ger)[1])
+evalita$Country <- rep("Italy", dim(r0_ger)[1])
+
 ggplot(NULL) +
   geom_line(data = evalita, aes(x = dates, y=r0_ita, color = r0_ita))
+
+non_ci <- rbind(df[c("dates", "R_sim", "R_Mean", "Country")], evalita)
+non_ci <- rbind(non_ci, r0_ger)
+
+
+
 
