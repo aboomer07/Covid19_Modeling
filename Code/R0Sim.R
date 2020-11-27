@@ -98,10 +98,8 @@ for (t in 8:nrow(out)) {
  r0_ger[t] <- sum(out$y[t-0:3]) / sum(out$y[t-4:7])
 }
 r0_ger <- data.frame(r0_ger)
-dates <- as.Date("2020-02-15") + 7:(100-1)
-dates <- data.frame(dates)
 # bind to evaluation dataframe
-r0_ger <- left_join(Data_R_sim, r0_ger[c('r0_ger', 'dates')], by = 'dates')
+r0_ger <- cbind(Data_R_sim, r0_ger)
 
 
 eval_long <- reshape2::melt(eval, id.vars = 'dates')
