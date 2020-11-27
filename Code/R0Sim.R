@@ -20,13 +20,13 @@ GT_obj<-R0::generation.time("gamma", c(6.6, 1.5))
 # important: here you need to specify manually when you would like the true R0 to change
 Ret <- function(date1) {
   if(date1 <= as.Date("2020-03-15")) {
-    R_val <- 2
+    R_val <- 1.5
   }
   if (date1 > as.Date("2020-03-15") & date1 <= as.Date("2020-04-15")) {
     R_val <- 1.25
   }
   if (date1 > as.Date("2020-04-15"))  {
-    R_val <- 0.9
+    R_val <- 1.4
   }
   return(R_val)
 }
@@ -85,25 +85,35 @@ eval <- left_join(Data_R_sim, est_r0[c('R_austr', 'dates')], by = 'dates')
 
 eval_long <- reshape2::melt(eval, id.vars = 'dates')
 
-ggplot(NULL) +
-  geom_line(data = eval_long, aes(x = dates, y=value, color = variable))
+# ggplot(NULL) +
+#   geom_line(data = eval_long, aes(x = dates, y=value, color = variable))
 
 }
 
 # German method
 
 # R0 with serial time of 4 days
-r0_ger <- rep(NA, nrow(out))
-for (t in 8:nrow(out)) {
- r0_ger[t] <- sum(out$y[t-0:3]) / sum(out$y[t-4:7])
-}
-r0_ger <- data.frame(r0_ger)
-# bind to evaluation dataframe
-r0_ger <- cbind(Data_R_sim, r0_ger)
+int_list <- list()
+intervals <- c(4, 5, 6, 7)
+for (inter in c(1, 2, 3, 4)) {
+  interval <- intervals[inter]
+  r0_ger <- rep(NA, nrow(out))
+  for (t in (3 + interval):nrow(out)) {
+   r0_ger[t] <- sum(out$y[t-0:3]) / sum(out$y[t-interval:(3 + interval)])
+  }
+  r0_ger <- data.frame(r0_ger)
+  # bind to evaluation dataframe
+  r0_ger <- cbind(Data_R_sim, r0_ger)
 
-eval_long <- reshape2::melt(r0_ger, id.vars = 'dates')
-ggplot(NULL) +
-  geom_line(data = eval_long, aes(x = dates, y=value, color = variable)
+  long <- reshape2::melt(r0_ger, id.vars = 'dates')
+  long['Interval'] <- rep(interval, dim(long)[1])
+
+  int_list[[inter]] <- long
+}
+ger <- do.call(rbind, int_list)
+ggplot(data=ger) +
+  geom_line(aes(x = dates, y=value, color = variable)) +
+  facet_wrap(~Interval, nrow=2, ncol=2)
 
 
 params <- list(list(4.46, 2.63), list(5.2, 5.1), list(4, 4))
@@ -129,15 +139,15 @@ for (i in 1:length(params)) {
 
 df <- do.call(rbind, full_eval)
 
-simplot <- ggplot(data=df) +  
-  geom_line(aes(x=dates, y=R_Mean, color='red')) +  
-  geom_line(aes(x=dates, y=R_sim, col='blue')) +  
-  geom_ribbon(aes(x=dates, ymin=lower, ymax=upper, fill='red'), alpha=0.3) +
-  facet_wrap(~Country, nrow=1) +  ylab('Value of R') +  
-  scale_fill_identity(name = 'Confidence Interval', 
-    guide = 'legend',labels = c('CI')) +  
-  scale_colour_manual(name = 'R0 Type', 
-    values =c('red'='red','blue'='blue'), labels = c('Sim R0', 'Est R0')))
+# simplot <- ggplot(data=df) +  
+#   geom_line(aes(x=dates, y=R_Mean, color='red')) +  
+#   geom_line(aes(x=dates, y=R_sim, col='blue')) +  
+#   geom_ribbon(aes(x=dates, ymin=lower, ymax=upper, fill='red'), alpha=0.3) +
+#   facet_wrap(~Country, nrow=1) +  ylab('Value of R') +  
+#   scale_fill_identity(name = 'Confidence Interval', 
+#     guide = 'legend',labels = c('CI')) +  
+#   scale_colour_manual(name = 'R0 Type', 
+#     values =c('red'='red','blue'='blue'), labels = c('Sim R0', 'Est R0')))
 
 # Italian method
 #R0 with rolling window 5 
@@ -145,7 +155,6 @@ simplot <- ggplot(data=df) +
 #while window_interval should 
 #represent the generation time, which we take to be 4
 
-out$tot <- function(t) out$y 
 r0_itafun <- function(ts, window_interval) {
   data1 <- accelerometry::movingaves(ts, window=5)
   names(data1) <- names(ts)[3:(length(ts)-2)]
@@ -155,30 +164,60 @@ r0_itafun <- function(ts, window_interval) {
   return(res)
 }
 
-r0_ita <- r0_itafun(out$y, 4)
-r0_ita <- data.frame(r0_ita) #Length of 92 since res only starts at 5th observation and MA window is +-2 
+intervals <- c(4, 5, 6, 7)
+italist <- list()
+for (inter in c(1, 2, 3, 4)) {
+  interval <- intervals[inter]
+  r0_ita <- r0_itafun(out$y, interval)
+  r0_ita <- data.frame(r0_ita) #Length of 92 since res only starts at 5th observation and MA window is +-2 
 
-out$Date = as.character(out$Date)
+  out$Date = as.character(out$Date)
 
-for (t in 7:(length(out$Date)-2)){
-r0_ita$dates[t-6] <- out$Date[t]
+  for (t in (interval + 3):(length(out$Date)-2)){
+  r0_ita$dates[t-(interval + 2)] <- out$Date[t]
+  }
+
+  r0_ita$dates = as.Date(r0_ita$dates)
+  evalita <- left_join(Data_R_sim, r0_ita[c('r0_ita', 'dates')], 
+    left.by = 'dates')
+  evalita <- reshape2::melt(evalita, id.vars = 'dates')
+  evalita[['Interval']] <- rep(interval, dim(evalita)[1])
+  italist[[inter]] <- evalita
 }
 
-r0_ita$dates = as.Date(r0_ita$dates)
-evalita <- left_join(Data_R_sim, r0_ita[c('r0_ita', 'dates')], 
-  left.by = 'dates')
-names(evalita) <- c("dates", "R_sim", "R_Mean")
+ita <- do.call(rbind, italist)
+ggplot(data=ita) +
+  geom_line(aes(x = dates, y=value, color = variable)) +
+  facet_wrap(~Interval, nrow=2, ncol=2) +
+  ggsave("ItalyRobustness.png")
+
 
 names(r0_ger) <- c("dates", "R_sim", "R_Mean")
+r0_ger['R_Std'] <- rep(0, dim(r0_ger)[1])
+r0_ger['lower'] <- rep(0, dim(r0_ger)[1])
+r0_ger['upper'] <- rep(0, dim(r0_ger)[1])
 r0_ger$Country <- rep("Germany", dim(r0_ger)[1])
+
+evalita['R_Std'] <- rep(0, dim(evalita)[1])
+evalita['lower'] <- rep(0, dim(evalita)[1])
+evalita['upper'] <- rep(0, dim(evalita)[1])
 evalita$Country <- rep("Italy", dim(r0_ger)[1])
 
-ggplot(NULL) +
-  geom_line(data = evalita, aes(x = dates, y=r0_ita, color = r0_ita))
+# ggplot(NULL) +
+#   geom_line(data = evalita, aes(x = dates, y=r0_ita, color = r0_ita))
 
-non_ci <- rbind(df[c("dates", "R_sim", "R_Mean", "Country")], evalita)
+non_ci <- rbind(df, evalita)
 non_ci <- rbind(non_ci, r0_ger)
 
-
+simplot <- ggplot(data=non_ci) +  
+  geom_line(aes(x=dates, y=R_Mean, color='red')) +  
+  geom_line(aes(x=dates, y=R_sim, col='blue')) +  
+  geom_ribbon(aes(x=dates, ymin=lower, ymax=upper, fill='red'), alpha=0.3) +
+  facet_wrap(~Country, nrow=2, ncol=3, scale="free_y") +  ylab('Value of R') +  
+  scale_fill_identity(name = 'Confidence Interval', 
+    guide = 'legend',labels = c('CI')) +  
+  scale_colour_manual(name = 'R0 Type', 
+    values =c('red'='red','blue'='blue'), labels = c('Sim R0', 'Est R0')) +
+  ggsave("All_Countries_withCI_r0_2.png")
 
 
