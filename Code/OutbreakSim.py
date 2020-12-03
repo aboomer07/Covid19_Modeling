@@ -30,8 +30,11 @@ def linear_step_func(x, x0, x1):
                      )
     return R0
 
-def r0_dyn(t, r0=3, mu=0.03, r_bar=1.1):
-    R0 = r0 * np.exp(- mu * t) + (1 - np.exp(- mu * t)) * r_bar
+
+def r0_dyn(t, r1=7, r2=-2, mu1=0.013, mu2=0.01, r1_bar=-2, r2_bar=5):
+    R1 = r1 * np.exp(- mu1 * t) + (1 - np.exp(- mu1 * t)) * r1_bar
+    R2 = r2 * np.exp(- mu2 * t) + (1 - np.exp(- mu2 * t)) * r2_bar
+    R0 = (R1 + R2)/2
     return R0
 
 
@@ -82,7 +85,7 @@ def est_sir_dyn(N, i_0, r_0, R0, gamma, t, dynamic=False):
     return SIR
 
 t = np.linspace(0, 300, 300)
-gamma = 1/16
+gamma = 1/18
 SIR_step = est_sir_dyn(100000, 100, 0, 1.6, gamma, t, dynamic=True)
 SIR_step['Delta'] = SIR_step['S'].diff()*-1
 
@@ -107,6 +110,7 @@ ax2.annotate('γ: ' + str(round(gamma, 2)), xy=(1, 0), xycoords='axes fraction',
             ha='right', va='bottom')
 
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
+fig.set_size_inches(18.5, 10.5)
 plt.savefig(output_dir + 'SimulatedR0_dyn.png')
 plt.close()
 
@@ -135,5 +139,6 @@ ax2.annotate('γ: ' + str(round(gamma, 2)), xy=(1, 0), xycoords='axes fraction',
             ha='right', va='bottom')
 
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
+fig.set_size_inches(18.5, 10.5)
 plt.savefig(output_dir + 'SimulatedR0.png')
 plt.close()
