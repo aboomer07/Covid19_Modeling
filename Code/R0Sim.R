@@ -85,6 +85,8 @@ intervals <- c(4, 5, 6, 7)
 italist <- list()
 for (inter in c(1, 2, 3, 4)) {
   interval <- intervals[inter]
+  r0_ita <- r0_itafun(as.numeric(sim_dyn$Delta), interval)
+  r0_ita <- data.frame(r0_ita) #Length of 92 since res only starts at 5th observation and MA window is +-2
 }
 r0_ita$Days = 12:299
 
