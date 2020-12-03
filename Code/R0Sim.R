@@ -11,7 +11,7 @@ library(tidyverse)
 ###################################
 
 ### Set up distribution on generation time
-GT_pmf <- structure( c(0, 0.1, 0.1, 0.2, 0.2, 0.2, 0.1, 0.1), names=0:7)
+GT_pmf <- structure(c(0, 0.1, 0.1, 0.2, 0.2, 0.2, 0.1, 0.1), names=0:7)
 GT_obj <- R0::generation.time("empirical", val=GT_pmf)
 
 GT_obj<-R0::generation.time("gamma", c(6.6, 1.5))
@@ -98,9 +98,11 @@ intervals <- c(4, 5, 6, 7)
 for (inter in c(1, 2, 3, 4)) {
   interval <- intervals[inter]
   r0_ger <- rep(NA, nrow(out))
+
   for (t in (3 + interval):nrow(out)) {
-   r0_ger[t] <- sum(out$y[t-0:3]) / sum(out$y[t-interval:(3 + interval)])
+    r0_ger[t] <- sum(out$y[t-0:3]) / sum(out$y[t-interval:(3 + interval)])
   }
+
   r0_ger <- data.frame(r0_ger)
   # bind to evaluation dataframe
   r0_ger <- cbind(Data_R_sim, r0_ger)
@@ -110,6 +112,7 @@ for (inter in c(1, 2, 3, 4)) {
 
   int_list[[inter]] <- long
 }
+
 ger <- do.call(rbind, int_list)
 ggplot(data=ger) +
   geom_line(aes(x = dates, y=value, color = variable)) +
@@ -158,7 +161,7 @@ df <- do.call(rbind, full_eval)
 r0_itafun <- function(ts, window_interval) {
   data1 <- accelerometry::movingaves(ts, window=5)
   names(data1) <- names(ts)[3:(length(ts)-2)]
-  res <- sapply( (1+window_interval):length(data1), function(t) {
+  res <- sapply((1+window_interval):length(data1), function(t) {
     data1[t]/data1[t-window_interval]
   })
   return(res)
@@ -174,7 +177,7 @@ for (inter in c(1, 2, 3, 4)) {
   out$Date = as.character(out$Date)
 
   for (t in (interval + 3):(length(out$Date)-2)){
-  r0_ita$dates[t-(interval + 2)] <- out$Date[t]
+    r0_ita$dates[t-(interval + 2)] <- out$Date[t]
   }
 
   r0_ita$dates = as.Date(r0_ita$dates)
