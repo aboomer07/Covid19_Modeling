@@ -11,9 +11,6 @@ library(tidyverse)
 ###################################
 
 ### Set up distribution on generation time
-GT_pmf <- structure( c(0, 0.1, 0.1, 0.2, 0.2, 0.2, 0.1, 0.1), names=0:7)
-GT_obj <- R0::generation.time("empirical", val=GT_pmf)
-
 GT_obj<-R0::generation.time("gamma", c(6.6, 1.5))
 
 # Define time varying effective reproduction number
@@ -88,7 +85,6 @@ eval_long <- reshape2::melt(eval, id.vars = 'dates')
 # ggplot(NULL) +
 #   geom_line(data = eval_long, aes(x = dates, y=value, color = variable))
 
-}
 
 # German method
 
@@ -219,5 +215,3 @@ simplot <- ggplot(data=non_ci) +
   scale_colour_manual(name = 'R0 Type', 
     values =c('red'='red','blue'='blue'), labels = c('Sim R0', 'Est R0')) +
   ggsave("All_Countries_withCI_r0_2.png")
-
-
