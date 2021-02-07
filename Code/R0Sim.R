@@ -47,13 +47,13 @@ int_list <- list()
 intervals <- c(4)
 for (inter in c(1)) {
   interval <- intervals[inter]
-  r0_ger <- rep(NA, nrow(sim_dyn))
-  for (t in (3 + interval):nrow(sim_dyn)) {
+  r0_ger <- rep(NA, nrow(actual_data))
+  for (t in (3 + interval):nrow(actual_data)) {
    r0_ger[t] <- sum(as.numeric(sim_dyn$Delta)[t-0:3]) / sum(as.numeric(sim_dyn$Delta)[t-interval:(3 + interval)])
   }
   r0_ger <- data.frame(r0_ger)
   # bind to evaluation dataframe
-  r0_ger <- cbind(sim_dyn, r0_ger)
+  r0_ger <- cbind(actual_data, r0_ger)
 
   long <- reshape2::melt(r0_ger, id.vars = 'Days')
   long['Interval'] <- rep(interval, dim(long)[1])
@@ -102,6 +102,9 @@ evalita <- left_join(sim_dyn, r0_ita[c('r0_ita', 'Days')], by = 'Days')
 # names(r0_ger) <- c("dates", "R_sim", "R_Mean")
 colnames(r0_ger)[colnames(r0_ger) == 'r0_ger'] <- 'R_Mean'
 r0_ger['R_Std'] <- rep(0, dim(r0_ger)[1])
+r0_ger <- na.omit(r0_ger)
+r0_ger$Days <- 10:(nrow(est_r0)+7)
+r0_ger <- r0_ger[c('R_Mean', 'R_Std', 'Days')]
 r0_ger['lower'] <- rep(0, dim(r0_ger)[1])
 r0_ger['upper'] <- rep(0, dim(r0_ger)[1])
 r0_ger$Country <- rep("Germany", dim(r0_ger)[1])
