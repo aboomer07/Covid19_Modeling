@@ -12,6 +12,7 @@ outpath <- paste0(getwd(), '/Output/')
 
 sim_const <- read.csv2(paste0(imppath, 'SimulatedSIR.csv'))[-1, ]
 sim_dyn <- read.csv2(paste0(imppath, 'SimulatedSIR_dyn.csv'))[-1, ]
+# sim_dyn <- sim_dyn[20:dim(sim_dyn)[1], names(sim_dyn)]
 
 ###################################
 ########## Estimating R0 ##########
@@ -27,8 +28,7 @@ full_eval <- list()
 for (i in 1:length(params)) {
   mean <- params[[i]][[1]]
   std <- params[[i]][[2]]
-  est_r0 <- estimate_R(incid=as.numeric(sim_dyn$Delta), method='parametric_si',
-    config=make_config(list(mean_si=mean, std_si=std)))[[1]]
+  est_r0 <- estimate_R(incid=as.numeric(sim_dyn$Delta), method='parametric_si', config=make_config(list(mean_si=mean, std_si=std)))[[1]]
   est_r0 <- est_r0[c('Mean(R)', 'Std(R)', 't_end')]
   names(est_r0) <- c("R_Mean", 'R_Std', 'Days')
   eval <- left_join(sim_dyn, est_r0, by = 'Days')
@@ -44,8 +44,8 @@ df <- do.call(rbind, full_eval)
 
 # R0 with serial time of 4 days
 int_list <- list()
-intervals <- c(4, 5, 6, 7)
-for (inter in c(1, 2, 3, 4)) {
+intervals <- c(4)
+for (inter in c(1)) {
   interval <- intervals[inter]
   r0_ger <- rep(NA, nrow(sim_dyn))
   for (t in (3 + interval):nrow(sim_dyn)) {
@@ -72,23 +72,23 @@ for (inter in c(1, 2, 3, 4)) {
 #while window_interval should 
 #represent the generation time, which we take to be 4
 
-r0_itafun <- function(ts, window_interval) {
-  data1 <- accelerometry::movingaves(ts, window=5)
+r0_itafun <- function(ts, omega, tau) {
+  data1 <- accelerometry::movingaves(ts, window=tau)
   names(data1) <- names(ts)[3:(length(ts)-2)]
-  res <- sapply((1+window_interval):length(data1), function(t) {
-    data1[t]/data1[t-window_interval]
+  res <- sapply((1+omega+tau):length(data1), function(t) {
+    data1[t]/data1[t-omega]
   })
   return(res)
 }
 
-intervals <- c(4, 5, 6, 7)
+intervals <- c(4)
 italist <- list()
-for (inter in c(1, 2, 3, 4)) {
+for (inter in c(1)) {
   interval <- intervals[inter]
-  r0_ita <- r0_itafun(as.numeric(sim_dyn$Delta), interval)
+  r0_ita <- r0_itafun(as.numeric(sim_dyn$Delta), interval, 1)
   r0_ita <- data.frame(r0_ita) #Length of 92 since res only starts at 5th observation and MA window is +-2
 }
-r0_ita$Days = 12:299
+r0_ita$Days = 1:dim(r0_ita)[1]
 
 evalita <- left_join(sim_dyn, r0_ita[c('r0_ita', 'Days')], by = 'Days')
 
@@ -112,20 +112,19 @@ evalita['lower'] <- rep(0, dim(evalita)[1])
 evalita['upper'] <- rep(0, dim(evalita)[1])
 evalita$Country <- rep("Italy", dim(r0_ger)[1])
 
-
 non_ci <- rbind(df, evalita)
 non_ci <- rbind(non_ci, r0_ger)
 
 simplot <- ggplot(data=non_ci) +  
   geom_line(aes(x=Days, y=R_Mean, color='red')) +
-  geom_line(aes(x=Days, y=as.numeric(R0), col='blue')) +
+  geom_line(aes(x=Days, y=as.numeric(Rt), col='blue')) +
   geom_ribbon(aes(x=Days, ymin=lower, ymax=upper, fill='red'), alpha=0.3) +
-  facet_wrap(~Country, nrow=2, ncol=3, scale="free_y") +  ylab('Value of R') +  
+  facet_wrap(~Country, nrow=2, ncol=3) +  ylab('Value of R') +  
   scale_fill_identity(name = 'Confidence Interval', 
     guide = 'legend',labels = c('CI')) +  
-  scale_colour_manual(name = 'R0 Type', 
-    values =c('red'='red','blue'='blue'), labels = c('Sim R0', 'Est R0')) +
-  ggsave(paste0(outpath, "All_Countries_withCI_r0_2.png"))
+  scale_colour_manual(name = 'Rt Type', 
+    values =c('red'='red','blue'='blue'), labels = c('Sim Rt', 'Est Rt')) +
+  ggsave(paste0(outpath, "All_Countries_withCI_Rt.png"))
 
 
 
