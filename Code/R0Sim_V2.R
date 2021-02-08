@@ -16,13 +16,25 @@ imppath <- paste0(getwd(), '/Data/')
 actual_data <- read.csv2(paste0(imppath, 'EuropeCovidData.csv'))
 actual_data <- subset(actual_data, Country.Region == 'US')
 
-# drop first 80 observations (2M) to account for testing catching up
-actual_data <- tail(actual_data, -80)
+sir_sim <- read.csv2(paste0(imppath, 'SimulatedSIR.csv'))[-1, ]
+sir_sim$Delta <- as.numeric(sir_sim$Delta)
+sir_sim$S <- as.numeric(sir_sim$S)
+sir_sim$Rt <- as.numeric(sir_sim$Rt)
+sir_sim$I <- as.numeric(sir_sim$I)
+sir_sim$Reff <- sir_sim$Rt * (sir_sim$S / 100000)
 
+# drop first 80 observations (2M) to account for testing catching up
+# actual_data <- tail(actual_data, -80)
+
+mean <- 6.6
+std <- 1.1
+R0 <- 1.6
+
+window <- 11
 
 # define serial interval distribution taken from Cereda et al (2020)
-gamma_x <- seq(1, 100, 1)
-gamma_y <- dgamma(gamma_x, 6.6, 1.1)
+gamma_x <- seq(1, window, 1)
+gamma_y <- dgamma(gamma_x, mean, std)
 plot(gamma_y, type = "l")
 
 
@@ -30,37 +42,59 @@ plot(gamma_y, type = "l")
 # important: here you need to specify manually when you would like the true R0 to change
 
 for (t in 1:length(actual_data$date)){
-if (actual_data$date[t] <= as.Date("2020-06-11")){
-actual_data$R_val[t] <- 1.5
+	if (actual_data$date[t] <= as.Date("2020-06-11")){
+		actual_data$R_val[t] <- R0
 }
-else if (actual_data$date[t] > as.Date("2020-06-11")) {
-actual_data$R_val[t] <- 1.25
-}
+	else if (actual_data$date[t] > as.Date("2020-06-11")) {
+		actual_data$R_val[t] <- R0
+	}
 }
 
 # cannot do it in one loop cause i suck
 for (t in 1:length(actual_data$date)){
-if (actual_data$date[t] > as.Date("2020-09-11")) {
-actual_data$R_val[t] <- 1.4
-}
+	if (actual_data$date[t] > as.Date("2020-09-11")) {
+		actual_data$R_val[t] <- R0
+	}
 }
 
 #Generate outbreak accoring to E[I_t]=R+t*sum^{t}{s=1}I{t-s}w_s
 #we use a window of 5 days
 
 actual_data$infective <- 0
+actual_data[1:window, ]$infective <- seq(1, (10 - (9/window)), (9/window))
 actual_data$simulation <- 0
 
-for (t in 6:length(actual_data$date)) {
-actual_data$infective[t] <- actual_data$confirmed[t-5]*gamma_y[5] +
-actual_data$confirmed[t-4]*gamma_y[4] + actual_data$confirmed[t-3]*gamma_y[3] +
-actual_data$confirmed[t-2]*gamma_y[2] + actual_data$confirmed[t-1]*gamma_y[1]
+gamma <- rev(gamma_y)
 
-actual_data$simulation[t] <- actual_data$R_val[t]*actual_data$infective[t]
+for (t in (window + 1):length(actual_data$date)) {
+
+	x <- sum(actual_data[(t - window):(t-1), ]$infective * gamma)
+	actual_data$infective[t] <- x * actual_data$R_val[t]
 }
 
+#Estimate R via the function in the EpiEstim package
+tsi_est <- estimate_R(actual_data$infective, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
+
+jpeg("TSISim.jpeg")
+par(mfrow=c(2,1), tcl=0.5, family="serif", mai=c(1,1,0.3,0.3))
+plot(actual_data$infective, type='l', xlab='Number of Days', ylab = 'Daily Infections')
+plot(tsi_est$R$`Mean(R)`, type ="l", ylim = c(0,3), xlab='Number of Days', ylab='Rt')
+lines(actual_data$R_val, col = "red")
+legend(100, 1, 
+	legend = c("Estimated Rt", "Simulated Rt"),
+	fill = c("black", "red"))
+dev.off()
 
 #Estimate R via the function in the EpiEstim package
-est_r0 <- estimate_R(actual_data$simulation, method = 'parametric_si', config = make_config(list(mean_si = 6.6, std_si = 1.1)))
-plot(est_r0$R$`Mean(R)`, type ="l", ylim = c(0,4))
-lines(actual_data$R_val, col = "red")
+sir_est <- estimate_R(sir_sim$Delta, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
+
+jpeg("SIRSim.jpeg")
+par(mfrow=c(2,1), tcl=0.5, family="serif", mai=c(1,1,0.3,0.3))
+plot(sir_sim$Delta, type='l', xlab='Number of Days', ylab = 'Daily Infections')
+plot(sir_est$R$`Mean(R)`, type ="l", ylim = c(0,3), xlab='Number of Days', ylab='Rt')
+lines(sir_sim$Rt, col = "red")
+lines(sir_sim$Reff, col = "blue")
+legend(100, 3, 
+	legend = c("Estimated Rt", "Simulated Rt", "Simulated Reff (Rt * (S/N))"),
+	fill = c("black", "red", 'blue'))
+dev.off()
