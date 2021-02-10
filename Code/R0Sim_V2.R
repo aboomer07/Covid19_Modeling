@@ -19,7 +19,7 @@ actual_data <- subset(actual_data, Country.Region == 'US')
 sir_sim <- read.csv2(paste0(imppath, 'SimulatedSIR.csv'))[-1, ]
 sir_sim$Delta <- as.numeric(sir_sim$Delta)
 sir_sim$S <- as.numeric(sir_sim$S)
-sir_sim$Rt <- as.numeric(sir_sim$Rt)
+sir_sim$Rt <- as.numeric(sir_sim$R0)
 sir_sim$I <- as.numeric(sir_sim$I)
 sir_sim$Reff <- sir_sim$Rt * (sir_sim$S / 100000)
 
@@ -56,6 +56,12 @@ for (t in 1:length(actual_data$date)){
 		actual_data$R_val[t] <- R0
 	}
 }
+
+# time varying R_t
+
+set.seed(1)
+
+actual_data$R_val <- actual_data$R_val + cumsum(sample(c(-0.1, 0.1), length(actual_data$R_val), TRUE))
 
 #Generate outbreak accoring to E[I_t]=R+t*sum^{t}{s=1}I{t-s}w_s
 #we use a window of 5 days
