@@ -24,13 +24,13 @@ mean <- 6.6
 std <- 1.1
 R <- c(1.8, 1.6, 1.4, 1.2)
 
-window <- 11
+window <- c(8, 11, 14)
 
 experimentR <- function(mean, std, R, window, data = actual_data){
 	data <- data
 
 	for (w in window){
-		gamma_x <- seq(1, w, 1)
+		gamma_x <- seq(0, (w-1), 1)
 		gamma_y <- dgamma(gamma_x, mean, std)
 		gamma <- rev(gamma_y)
 
