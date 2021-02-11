@@ -19,7 +19,7 @@ actual_data <- subset(actual_data, Country.Region == 'US')
 sir_sim <- read.csv2(paste0(imppath, 'SimulatedSIR.csv'))[-1, ]
 sir_sim$Delta <- as.numeric(sir_sim$Delta)
 sir_sim$S <- as.numeric(sir_sim$S)
-sir_sim$Rt <- as.numeric(sir_sim$R0)
+sir_sim$Rt <- as.numeric(sir_sim$Rt)
 sir_sim$I <- as.numeric(sir_sim$I)
 sir_sim$Reff <- sir_sim$Rt * (sir_sim$S / 100000)
 
@@ -35,6 +35,7 @@ window <- 11
 # define serial interval distribution taken from Cereda et al (2020)
 gamma_x <- seq(1, window, 1)
 gamma_y <- dgamma(gamma_x, mean, std)
+gamma <- rev(gamma_y)
 plot(gamma_y, type = "l")
 
 
@@ -70,11 +71,9 @@ actual_data$infective <- 0
 actual_data[1:window, ]$infective <- round(seq(1, (10 - (9/window)), (9/window)))
 actual_data$simulation <- 0
 
-gamma <- rev(gamma_y)
-
 for (t in (window + 1):length(actual_data$date)) {
 
-	x <- sum(actual_data[(t - window):(t-1), ]$infective * gamma)
+	x <- sum(actual_data[(t - window + 1):t, ]$infective * gamma)
 	actual_data$infective[t] <- x * actual_data$R_val[t]
 }
 
@@ -84,20 +83,20 @@ actual_data$infective_new <- 0
 # actual_data[1:window, ]$infective_new <- round(seq(1, (10 - (9/window)), (9/window)))
 actual_data$infective_new[1:window] <- 10
 
-actual_data$R_val <- 1.2
+actual_data$R_val <- 1.6
 
 for (t in (window + 1):length(actual_data$date)) {
-	x <- actual_data$R_val[t] * sum(actual_data[(t - window):(t-1), ]$infective_new * gamma)
-	actual_data$infective_new[(t - window):(t-1)] <- rpois(1, x)
-}
+	x <- actual_data$R_val[t] * sum(actual_data[(t - window + 1):t, ]$infective_new * gamma)
 
+	actual_data$infective_new[t] <- rpois(1, x)
+}
 
 #Estimate R via the function in the EpiEstim package
 tsi_est <- estimate_R(actual_data$infective_new, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
 
 jpeg("TSISim.jpeg")
 par(mfrow=c(2,1), tcl=0.5, family="serif", mai=c(1,1,0.3,0.3))
-plot(actual_data$infective, type='l', xlab='Number of Days', ylab = 'Daily Infections')
+plot(actual_data$infective_new, type='l', xlab='Number of Days', ylab = 'Daily Infections')
 plot(tsi_est$R$`Mean(R)`, type ="l", ylim = c(0,3), xlab='Number of Days', ylab='Rt')
 lines(actual_data$R_val, col = "red")
 legend(100, 1, 
