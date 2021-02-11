@@ -59,15 +59,15 @@ for (t in 1:length(actual_data$date)){
 
 # time varying R_t
 
-set.seed(1)
+# set.seed(1)
 
-actual_data$R_val <- actual_data$R_val + cumsum(sample(c(-0.1, 0.1), length(actual_data$R_val), TRUE))
+# actual_data$R_val <- actual_data$R_val + cumsum(sample(c(-0.1, 0.1), length(actual_data$R_val), TRUE))
 
 #Generate outbreak accoring to E[I_t]=R+t*sum^{t}{s=1}I{t-s}w_s
 #we use a window of 5 days
 
 actual_data$infective <- 0
-actual_data[1:window, ]$infective <- seq(1, (10 - (9/window)), (9/window))
+actual_data[1:window, ]$infective <- round(seq(1, (10 - (9/window)), (9/window)))
 actual_data$simulation <- 0
 
 gamma <- rev(gamma_y)
@@ -78,8 +78,22 @@ for (t in (window + 1):length(actual_data$date)) {
 	actual_data$infective[t] <- x * actual_data$R_val[t]
 }
 
+# generate outbreak according to poisson dist with mean R_t sum(I_t-s w_s)
+
+actual_data$infective_new <- 0
+# actual_data[1:window, ]$infective_new <- round(seq(1, (10 - (9/window)), (9/window)))
+actual_data$infective_new[1:window] <- 10
+
+actual_data$R_val <- 1.2
+
+for (t in (window + 1):length(actual_data$date)) {
+	x <- actual_data$R_val[t] * sum(actual_data[(t - window):(t-1), ]$infective_new * gamma)
+	actual_data$infective_new[(t - window):(t-1)] <- rpois(1, x)
+}
+
+
 #Estimate R via the function in the EpiEstim package
-tsi_est <- estimate_R(actual_data$infective, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
+tsi_est <- estimate_R(actual_data$infective_new, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
 
 jpeg("TSISim.jpeg")
 par(mfrow=c(2,1), tcl=0.5, family="serif", mai=c(1,1,0.3,0.3))
