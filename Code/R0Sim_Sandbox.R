@@ -59,3 +59,32 @@ experimentR <- function(mean, std, R, window, data = actual_data){
 }}
 
 experimentR(mean, std, R, window)
+
+# new Nour simulation
+# as we are dealing in deltas we need a data frame that works in deltas (say hours for now)
+
+# 100 days --> 2400 rows
+
+
+days <- 100
+w <-  11
+R <- 1.4
+
+# construct data
+data <- data.frame(matrix(nrow = days*24, ncol = 3))
+colnames(data) <- c('t', 'R_t', 'infective')
+data$t <- rep(1:days, each = 24)
+data$infective[1:(w*24)] <- 10
+data$R_t <- R
+
+# set up gamma
+# use delta as input for gamma to have more points
+gamma_x <- seq(0, (w-1), 1) # this should be 10*24 as our guy is now 240 hours infective (increment: 1/24)
+gamma_y <- dgamma(gamma_x, mean, std)
+gamma <- rev(gamma_y)
+
+for (t in (w + 1):days) {
+	infec <- mean(data[which(data$t==t),]$R_t) * 1/24 * sum(data[which(data$t %in% (t-w:t-1)),]$infective * gamma)
+	print(infec)
+	data[which(data$t == t),]$infective <- infec
+}
