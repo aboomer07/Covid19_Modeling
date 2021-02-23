@@ -24,13 +24,12 @@ mean <- 6.6
 std <- 1.1
 R <- c(1.8, 1.6, 1.4, 1.2)
 
-window <- 11
+window <- c(8, 11, 14)
 
 experimentR <- function(mean, std, R, window, data = actual_data){
 	data <- data
 
 	for (w in window){
-		gamma_x <- seq(0, w, 1)
 		gamma_y <- dgamma(gamma_x, mean, std)
 		gamma <- rev(gamma_y)
 
@@ -59,3 +58,42 @@ experimentR <- function(mean, std, R, window, data = actual_data){
 }}
 
 experimentR(mean, std, R, window)
+
+# new Nour simulation
+# as we are dealing in deltas we need a data frame that works in deltas (say hours for now)
+
+# 100 days --> 2400 rows
+
+
+days <- 100
+tau_m <-  11
+R <- 1.4
+delta <- 1/24
+mean <- 6.6
+std <- 1.1
+N <- tau_m / delta
+
+# construct data
+data <- data.frame(matrix(nrow = days*24, ncol = 4))
+colnames(data) <- c('t', 'days', 'R_t', 'infective')
+data$t <- 1:dim(data)[1]
+data$days <- rep(1:days, each = 24)
+data$infective[1:(tau_m*24)] <- 10
+data$R_t <- R
+
+# set up gamma
+# use delta as input for gamma to have more points
+gamma_x <- seq(0, ((tau_m /delta) - 1), 1)
+gamma_y <- rep(dgamma(gamma_x, mean, std), each=1/delta)
+gamma <- rev(gamma_y)
+
+start <- ((tau_m) * 24) + 1
+
+for (t in start:dim(data)[1]) {
+	I_vec <- data[data$t %in% (t-N):(t-1),]$infective
+	R_mean <- mean(data[which(data$t==t),]$R_t)
+	total_infec <- sum(I_vec * gamma)
+
+	infec <- R_mean * 1/24 * total_infec
+	data[which(data$t == t),]$infective <- infec
+}
