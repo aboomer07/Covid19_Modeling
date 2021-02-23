@@ -62,9 +62,6 @@ experimentR(mean, std, R, window)
 # new Nour simulation
 # as we are dealing in deltas we need a data frame that works in deltas (say hours for now)
 
-# 100 days --> 2400 rows
-
-
 days <- 100
 tau_m <-  11
 R <- 1.4
@@ -83,7 +80,7 @@ data$R_t <- R
 
 # set up gamma
 # use delta as input for gamma to have more points
-gamma_x <- seq(0, ((tau_m /delta) - 1), 1)
+gamma_x <- seq(0, tau_m-1, 1)
 gamma_y <- rep(dgamma(gamma_x, mean, std), each=1/delta)
 gamma <- rev(gamma_y)
 
