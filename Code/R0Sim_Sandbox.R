@@ -30,7 +30,7 @@ experimentR <- function(mean, std, R, window, data = actual_data){
 	data <- data
 
 	for (w in window){
-		gamma_x <- seq(1, w, 1)
+		gamma_x <- seq(0, w, 1)
 		gamma_y <- dgamma(gamma_x, mean, std)
 		gamma <- rev(gamma_y)
 
@@ -39,7 +39,7 @@ experimentR <- function(mean, std, R, window, data = actual_data){
 				data$infective_new <- 0
 				data$infective_new[1:window] <- 10
 				for (t in (window + 1):length(data$date)) {
-					x <- data$R_val[t] * sum(data[(t - window + 1):t, ]$infective_new * gamma)
+					x <- data$R_val[t] * sum(data[(t - window):t, ]$infective_new * gamma)
 					data$infective_new[t] <- rpois(1, x)
 				}
 				tsi_est <- estimate_R(data$infective_new, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
