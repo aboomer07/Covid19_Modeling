@@ -75,7 +75,7 @@ data <- data.frame(matrix(nrow = days*24, ncol = 4))
 colnames(data) <- c('t', 'days', 'R_t', 'infective')
 data$t <- 1:dim(data)[1]
 data$days <- rep(1:days, each = 24)
-data$infective[1:(tau_m*24)] <- 100
+data$infective[1:(tau_m*24)] <- seq(1, 101, 100/(tau_m*24 -1))
 data$R_t <- R
 
 # set up gamma
@@ -91,23 +91,24 @@ beta <- 20
 mean <- alpha * beta
 std <- sqrt(alpha*beta^2)
 
+# reconstruct from mean = 4.46, std = 2.63
+beta <- mean / (std^2)
+alpha <- (mean^2) / (std^2)
+
 range <- seq(0, tau_m*24-1, 1)
-gamma_y <- dgamma(range, alpha, rate = 1/beta)
+gamma_y <- dgamma(range, shape = alpha, scale = beta)
 plot(range, gamma_y, type ="l")
 gamma <- rev(gamma_y)
 
-# reconstruct from mean = 4.46, std = 2.63
-beta <- (2.63^2)/4.46
-alpha <- 4.46/beta
-
-alpha <- alpha
-beta <- beta
+gamma_x <- seq(0, tau_m-1, 1)
+gamma_y <- rep(dgamma(gamma_x, alpha, beta), each=1/delta)
+gamma <- rev(gamma_y)
 
 # just to compare with Austrian estimation, looks very similar
 # https://www.ages.at/download/0/0/068cb5fb9f2256d267e1a3dc8d464623760fcc30/fileadmin/AGES2015/Wissen-Aktuell/COVID19/Sch%C3%A4tzung_des_seriellen_Intervalles_von_COVID19_2020-04-08.pdf
-range <- seq(0, tau_m+4, 1)
-gamma_og <- dgamma(range, alpha, rate = 1/beta)
-plot(range, gamma_og, type ="l")
+# range <- seq(0, tau_m+4, 1)
+# gamma_og <- dgamma(range, alpha, rate = 1/beta)
+# plot(range, gamma_og, type ="l")
 
 
 start <- ((tau_m) * 24) + 1
@@ -117,7 +118,7 @@ for (t in start:dim(data)[1]) {
 	R_mean <- mean(data[which(data$t==t),]$R_t)
 	total_infec <- sum(I_vec * gamma)
 
-	infec <- R_mean * total_infec
+	infec <- (1/24) * R_mean * total_infec
 	data[which(data$t == t),]$infective <- infec
 }
 
