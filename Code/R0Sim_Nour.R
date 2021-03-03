@@ -13,7 +13,7 @@ library(tidyverse)
 imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
 
-window <-  11
+window <-  18
 R_val <- c(1.6, 0.9, 1.3)
 rep <- 40
 n_days <- length(R_val)*rep
@@ -37,13 +37,17 @@ nour_sim <- function(days = n_days, tau_m = window, R = R_val, N = n, plotname, 
 		data$R_t <- data$R_t + noise
 	}
 	# set up gamma
-	alpha <- 4.7
-	beta <- 20
-	mean <- alpha * beta
-	std <- sqrt(alpha*beta^2)
+	mean <- 6.6
+	std <- 1.1
+	alpha <- (mean^2) / (std^2)
+	beta <- mean / (std^2)
+	# mean <- alpha * beta
+	# std <- sqrt(alpha*beta^2)
+	# alpha <- 4.7
+	# beta <- 20
 
-	range <- seq(0, tau_m*24-1, 1)
-	gamma_y <- dgamma(range, alpha, rate = 1/beta)
+	range <- seq(0, ((tau_m*24)-1), 1)
+	gamma_y <- dgamma(range, shape=alpha, scale=beta)
 	gamma <- rev(gamma_y)
 
 	# simulate outbreak
@@ -64,8 +68,6 @@ nour_sim <- function(days = n_days, tau_m = window, R = R_val, N = n, plotname, 
 	summarise(infective_day = round(mean(infective)), R_val = mean(R_t))
 
 	# estimate and export plot
-	mean <- mean/24
-	std <- std/24
 	tsi_est <- estimate_R(daily_infec$infective_day, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
 	jpeg(paste0(outpath, 'TSISim_Nour_', plotname, ".jpeg"))
 	par(mfrow=c(2,1), tcl=0.5, family="serif", mai=c(1,1,0.3,0.3))
@@ -85,8 +87,5 @@ nour_sim(R = 1.3, noisy = T, plotname = 'NoisyR')
 nour_sim(plotname = 'StepR')
 
 nour_sim(noisy = T, plotname = 'StepR_noisy')
-
-
-
 
 
