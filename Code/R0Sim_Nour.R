@@ -82,8 +82,7 @@ nour_sim <- function(days = n_days, tau_m = window, R = R_val, N = n, plotname, 
 	# estimate and export plot
 	mean <- mean*delta
 	std <- std*delta
-	tsi_est <- estimate_R(daily_infec$infective_day, method = 'parametric_si', config = make_config(list(mean_si = mean,
-																										 std_si = std)))$R
+	tsi_est <- estimate_R(daily_infec$infective_day, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))$R
 	tsi_est['lower'] <- tsi_est$`Mean(R)` - (1.96 * tsi_est$`Std(R)`)
 	tsi_est['upper'] <- tsi_est$`Mean(R)` + (1.96 * tsi_est$`Std(R)`)
 	newx <- 1:(days-7) # substract weekly window
