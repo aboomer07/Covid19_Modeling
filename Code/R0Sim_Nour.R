@@ -140,10 +140,38 @@ nour_sim(noisy = T, plotname = 'StepR_noisy_CI')
 
 # new estimate R function
 
+discr_si <- function(k, mu, sigma) {
 
-nour_sim_manual <- function(days = n_days, tau_m = window, tau_e = tau_est, R = R_val, N = n, plotname, noisy = F){
-	# set up data
-	# set up data
+	k <- 0:(k-1)
+
+
+  if (sigma < 0) {
+    stop("sigma must be >=0.")
+  }
+  if (mu <= 1) {
+    stop("mu must be >1")
+  }
+  if (any(k < 0)) {
+    stop("all values in k must be >=0.")
+  }
+
+  a <- ((mu - 1) / sigma)^2
+  b <- sigma^2 / (mu - 1)
+
+  cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, scale = b)
+
+  res <- k * cdf_gamma(k, a, b) + 
+    (k - 2) * cdf_gamma(k - 2, a, b) - 2 * (k - 1) * cdf_gamma(k - 1, a, b)
+  res <- res + a * b * (2 * cdf_gamma(k - 1, a + 1, b) - 
+                          cdf_gamma(k - 2, a + 1, b) - cdf_gamma(k, a + 1, b))
+  res <- sapply(res, function(e) max(0, e))
+
+  return(res)
+}
+
+
+nour_sim_manual <- function(days = n_days, tau_m = window, tau_e = tau_est, R = R_val, N = n, plotname, noisy = F) {
+
 	data <- data.frame(matrix(nrow = days*24, ncol = 4))
 	colnames(data) <- c('t', 'days', 'R_t', 'infective')
 	data$t <- 1:dim(data)[1]
@@ -151,10 +179,11 @@ nour_sim_manual <- function(days = n_days, tau_m = window, tau_e = tau_est, R = 
 	data$infective[1:(tau_m*24)] <- round(seq(10, 100, length.out = tau_m*24))
 	data$R_t <- rep(R, each = rep*24)
 
-	if (noisy){
+	if (noisy) {
 		noise <- rnorm(dim(data)[1], 0.15, 0.1)
 		data$R_t <- data$R_t + noise
 	}
+
 	# set up gamma
 	# andy:
 	# mean <- 94
@@ -207,27 +236,29 @@ nour_sim_manual <- function(days = n_days, tau_m = window, tau_e = tau_est, R = 
 	beta <- std^2/mean
 	alpha <- mean/beta
 
-	range <- seq(0, ((tau_m)-1), 1)
-	gamma_y <- dgamma(range, alpha, rate=1/beta)
-	gamma <- rev(gamma_y)
+	# range <- seq(0, ((tau_m)-1), 1)
+	# gamma_y <- dgamma(range, alpha, rate=1/beta)
+	# gamma <- rev(gamma_y)
 
-	start <- tau_e + 1
+	start <- 2
 
 	R_t <- list()
 	for (t in start:dim(daily_infec)[1]) {
+		gamma <- rev(discr_si(t, mean, std))
 		I <- daily_infec[which(daily_infec$days==t),]$infective_day
-		I_window <- daily_infec[daily_infec$days %in% (t-tau_e):(t-1),]$infective_day
-		R <- (I+alpha)/(sum(I_window * gamma)+(1/beta))
+		I_window <- daily_infec[daily_infec$days %in% 1:(t-1),]$infective_day
+		R <- (I)/(sum(I_window * gamma))
 		# daily_infec[which(daily_infec$days == t),]$R_est <- R_t
 		R_t[t] <- R
 	}
+
 	R_t <- unlist(R_t, use.names=FALSE)
 
 
 	jpeg(paste0(outpath, 'TSISim_Nour_Manual_', plotname, ".jpeg"))
 	par(mfrow=c(2,1), tcl=0.5, family="serif", mai=c(1,1,0.3,0.3))
 	plot(daily_infec$infective_day, type='l', xlab='Number of Days', ylab = 'Daily Infections')
-	plot(R_t, type ="l", ylim = c(0,3), xlab='Number of Days', ylab='Rt')
+	plot(R_t, type ="l", ylim = c(0,(R+1)), xlab='Number of Days', ylab='Rt')
 	lines(tail(daily_infec, -tau_e)$R_val, col = "red")
 	legend(50, 1,
 		   legend = c("Estimated Rt", "Simulated Rt"),
@@ -237,7 +268,7 @@ nour_sim_manual <- function(days = n_days, tau_m = window, tau_e = tau_est, R = 
 
 }
 
-nour_sim_manual(R = 1.3, plotname = 'ConstantR')
+nour_sim_manual(R = 4, plotname = 'ConstantR')
 
 nour_sim_manual(plotname = 'StepR')
 
