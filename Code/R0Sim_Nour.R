@@ -8,6 +8,7 @@ library(R0)
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
+library(fitdistrplus)
 
 imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
@@ -142,7 +143,7 @@ nour_sim(noisy = T, plotname = 'StepR_noisy_CI')
 
 discr_si <- function(k, mu, sigma) {
 
-	k <- 0:(k-1)
+	k <- 1:(k)
 
 
   if (sigma < 0) {
@@ -183,19 +184,6 @@ nour_sim_manual <- function(days = n_days, tau_m = window, tau_e = tau_est, R = 
 		noise <- rnorm(dim(data)[1], 0.15, 0.1)
 		data$R_t <- data$R_t + noise
 	}
-
-	# set up gamma
-	# andy:
-	# mean <- 94
-	# std <- 43.35897
-	# alpha <- (mean^2) / (std^2)
-	# beta <- mean / (std^2)
-
-	# jp random:
-	#alpha <- 4.7
-	#beta <- 20
-	#mean <- alpha * beta
-	#std <- sqrt(alpha*beta^2)
 
 	# jp new:
 	mean <- 6.6*24
@@ -267,6 +255,75 @@ nour_sim_manual <- function(days = n_days, tau_m = window, tau_e = tau_est, R = 
 	return(daily_infec)
 
 }
+
+
+mean <- 6.6
+std <- 1.1
+beta <- std^2/mean
+alpha <- mean/beta
+
+T <- 25
+data <- data.frame(rep(1.4, T))
+names(data) <- "Rt"
+data$GamMean <- rep(6.6, T)
+data$GamStd <- rep(1.1, T)
+data$Lambda <- rep(0, T)
+
+sims <- 500
+samples <- c()
+
+#Take random sample from infector-infectee
+
+samp_pois <- function(data) {
+
+	range <- 1:nrow(data)
+
+	#Generate Mean Incidence based on gamma prior
+	for (t in range) {
+
+		gamma <- discr_si(t, data[t, ]$GamMean, data[t, ]$GamStd)
+		data[t, ]$Lambda <- data[t, ]$Rt * gamma[t]
+
+		#Add up all the random poisson infections
+		for (sim in 1:sims) {
+			samples <- c(samples, rep(t, rpois(1, data[t, ]$Lambda)))
+		}
+	}
+	return(samples)
+}
+
+samps <- samp_pois(data)
+
+# pdf <- rowSums(mat) + 0.01
+fit.gamma <- fitdist(samps, distr = "gamma")
+fit.weibull <- fitdist(samps, distr = "weibull")
+fit.norm <- fitdist(samps, distr = 'norm')
+fit.lnorm <- fitdist(samps, distr = 'lnorm')
+
+plot(dweibull(0:25, fit.weibull$estimate[1], fit.weibull$estimate[2]), type='l', col='red', ylim=c(0, 0.5))
+lines(dgamma(0:25, fit.gamma$estimate[1], fit.gamma$estimate[2]), col='blue')
+lines(dgamma(0:25, alpha, rate=1/beta), col='green')
+
+lower_mean <- fit.gamma$estimate[1] - (1.96 * fit.gamma$sd[1])
+upper_mean <- fit.gamma$estimate[1] + (1.96 * fit.gamma$sd[1])
+
+lower_sd <- fit.gamma$estimate[2] - (1.96 * fit.gamma$sd[2])
+upper_sd <- fit.gamma$estimate[2] + (1.96 * fit.gamma$sd[2])
+
+gamma_vals <- expand.grid(seq(lower_mean, upper_mean, ((upper_mean - lower_mean)/5)), seq(lower_sd, upper_sd, ((upper_sd - lower_sd)/5)))
+
+lower_mean <- fit.weibull$estimate[1] - (1.96 * fit.weibull$sd[1])
+upper_mean <- fit.weibull$estimate[1] + (1.96 * fit.weibull$sd[1])
+
+lower_sd <- fit.weibull$estimate[2] - (1.96 * fit.weibull$sd[2])
+upper_sd <- fit.weibull$estimate[2] + (1.96 * fit.weibull$sd[2])
+
+weibull_vals <- expand.grid(seq(lower_mean, upper_mean, ((upper_mean - lower_mean)/5)), seq(lower_sd, upper_sd, ((upper_sd - lower_sd)/5)))
+
+################################################################################
+#Simulating Serial Interval
+#Simulating Poisson Process at Individual Level, with prior
+################################################################################
 
 nour_sim_manual(R = 4, plotname = 'ConstantR')
 
