@@ -294,46 +294,86 @@ samp_pois <- function(data) {
 
 samps <- samp_pois(data)
 
-# pdf <- rowSums(mat) + 0.01
-fit.gamma <- fitdist(samps, distr = "gamma")
-fit.weibull <- fitdist(samps, distr = "weibull")
-fit.norm <- fitdist(samps, distr = 'norm')
-fit.lnorm <- fitdist(samps, distr = 'lnorm')
+# nour_sim_manual(R = 4, plotname = 'ConstantR')
 
-plot(dweibull(0:25, fit.weibull$estimate[1], fit.weibull$estimate[2]), type='l', col='red', ylim=c(0, 0.5))
-lines(dgamma(0:25, fit.gamma$estimate[1], fit.gamma$estimate[2]), col='blue')
-lines(dgamma(0:25, alpha, rate=1/beta), col='green')
+# nour_sim_manual(plotname = 'StepR')
 
-lower_mean <- fit.gamma$estimate[1] - (1.96 * fit.gamma$sd[1])
-upper_mean <- fit.gamma$estimate[1] + (1.96 * fit.gamma$sd[1])
-
-lower_sd <- fit.gamma$estimate[2] - (1.96 * fit.gamma$sd[2])
-upper_sd <- fit.gamma$estimate[2] + (1.96 * fit.gamma$sd[2])
-
-gamma_vals <- expand.grid(seq(lower_mean, upper_mean, ((upper_mean - lower_mean)/5)), seq(lower_sd, upper_sd, ((upper_sd - lower_sd)/5)))
-
-lower_mean <- fit.weibull$estimate[1] - (1.96 * fit.weibull$sd[1])
-upper_mean <- fit.weibull$estimate[1] + (1.96 * fit.weibull$sd[1])
-
-lower_sd <- fit.weibull$estimate[2] - (1.96 * fit.weibull$sd[2])
-upper_sd <- fit.weibull$estimate[2] + (1.96 * fit.weibull$sd[2])
-
-weibull_vals <- expand.grid(seq(lower_mean, upper_mean, ((upper_mean - lower_mean)/5)), seq(lower_sd, upper_sd, ((upper_sd - lower_sd)/5)))
+# nour_sim_manual(tau_e = 8, plotname = 'StepR_noisy_Tau8')
 
 ################################################################################
-#Simulating Serial Interval
-#Simulating Poisson Process at Individual Level, with prior
+#Plot the different estimated distributions vs. original gamma
 ################################################################################
 
-nour_sim_manual(R = 4, plotname = 'ConstantR')
+gen_distribution <- function(k, a, b, type) {
 
-nour_sim_manual(plotname = 'StepR')
+	k <- 1:k
 
-nour_sim_manual(tau_e = 8, plotname = 'StepR_noisy_Tau8')
+	if (type == 'gamma') {
 
+		cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, scale = b)
 
+		res <- k * cdf_gamma(k, a, b) + 
+		(k - 2) * cdf_gamma(k - 2, a, b) - 2 * (k - 1) * cdf_gamma(k - 1, a, b)
+		res <- res + a * b * (2 * cdf_gamma(k - 1, a + 1, b) - 
+		                      cdf_gamma(k - 2, a + 1, b) - cdf_gamma(k, a + 1, b))
+		res <- sapply(res, function(e) max(0, e))
 
+		return(res)
+	}
 
+	if (type == 'weibull') {
+		res <- dweibull(k, a, b)
+
+		return(res)
+	}
+
+	if (type == 'norm') {
+		res <- dnorm(k, a, b)
+
+		return(res)
+	}
+
+	if (type == 'lnorm') {
+		res <- dlnorm(k, a, b)
+
+		return(res)
+	}
+
+}
+
+num_vars <- 5
+params <- list()
+dists <- c('gamma', 'weibull', 'norm', 'lnorm')
+
+for (i in 1:length(dists)) {
+	dist <- dists[i]
+	fit <- fitdist(samps, distr = dist)
+
+	a_est <- fit$estimate[1]
+	b_est <- fit$estimate[2]
+
+	a_sd <- fit$sd[1]
+	b_sd <- fit$sd[2]
+
+	lower_a <- a_est - (1.96 * a_sd)
+	upper_a <- a_est + (1.96 * a_sd)
+
+	lower_b <- b_est - (1.96 * b_sd)
+	upper_b <- b_est + (1.96 * b_sd)
+
+	vals <- expand.grid(seq(lower_a, upper_a, ((upper_a - lower_a)/num_vars)),
+		seq(lower_b, upper_b, ((upper_b - lower_b)/num_vars)))
+
+	names(vals) <- c("Param_a", 'Param_b')
+	vals$Distribution <- dist
+	vals$True_a <- a_est
+	vals$True_b <- b_est
+
+	params[[i]] <- vals
+
+}
+
+params <- do.call('rbind', params)
 
 
 
