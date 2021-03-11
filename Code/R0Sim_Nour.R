@@ -99,6 +99,14 @@ serial_ests <- function(samps, num_vars, dists) {
 		a_sd <- fit$sd[1]
 		b_sd <- fit$sd[2]
 
+		if (dist == 'gamma') {
+			mean <- a_est / b_est
+			var <- a_est * (b_est^2)
+			mean <- mean - 1
+			b_est <- mean / sqrt(var)
+			a_est <- mean / b_est
+		}
+
 		lower_a <- a_est - (1.96 * a_sd)
 		upper_a <- a_est + (1.96 * a_sd)
 
@@ -109,6 +117,9 @@ serial_ests <- function(samps, num_vars, dists) {
 			seq(lower_b, upper_b, ((upper_b - lower_b)/num_vars)))
 
 		names(vals) <- c("Param_a", 'Param_b')
+		de <- data.frame(a_est, b_est)
+		names(de) <- c("Param_a", 'Param_b')
+		vals <- rbind(vals, de)
 		vals$Distribution <- dist
 		vals$True_a <- a_est
 		vals$True_b <- b_est
@@ -165,7 +176,7 @@ nour_sim_data <- function(sim_a, sim_b, sim_type, days = n_days, tau_m = window,
 	return(daily_infec)
 }
 
-Rt_est <- function(df, vals){
+Rt_est <- function(df, vals, distribution){
 	start <- 10
 	data <- data.frame(matrix(nrow = n_days * nrow(vals), ncol = 6))
 	names(data) <- c('Date', 'est_a', 'est_b', 'est_type', 'Rt', 'Est_Rt')
@@ -188,7 +199,7 @@ Rt_est <- function(df, vals){
 			type <- data[i, ]$est_type
 			t <- data[i, ]$Date
 
-			dist <- rev(gen_distribution(t-1, a, 1/b, type))
+			dist <- rev(gen_distribution(t-1, a, b, type))
 			I <- df[which(df$days==t),]$infective_day
 			I_window <- df[df$days %in% 1:(t-1),]$infective_day
 			data[i, ]$Est_Rt <- (I)/(sum(I_window * dist))
@@ -206,7 +217,7 @@ MSE_est <- function(df){
 	return(df)
 }
 
-samps <- samp_pois(c(1.4), 25, 500, sim_a, sim_b, 'gamma')
+samps <- samp_pois(c(1.4), 25, 2000, sim_a, sim_b, 'gamma')
 
 est_dists <- c("gamma", 'weibull', 'norm', 'lnorm')
 
@@ -219,9 +230,9 @@ MSE_mat <- list()
 
 for (i in 1:length(est_dists)) {
 	dist <- est_dists[i]
-	dist_vals <- params[params['Distribution'] == dist,]
+	dist_vals <- params[params['Distribution'] == dist, ]
 
-	mat <- Rt_est(dat, dist_vals)
+	mat <- Rt_est(dat, dist_vals, dist)
 	mat_MSE <- MSE_est(mat)
 
 	Rt_mat[[i]] <- mat
@@ -236,7 +247,7 @@ MSE_mat <- do.call('rbind', MSE_mat)
 ################################################################################
 
 og_gamma <- gen_distribution(15, sim_a, sim_b, "gamma")
-new_gamma <- gen_distribution(15, mean(params[params$Distribution == 'gamma', 'True_a']), 1/mean(params[params$Distribution == 'gamma', 'True_b']),"gamma")
+new_gamma <- gen_distribution(15, mean(params[params$Distribution == 'gamma', 'True_a']), mean(params[params$Distribution == 'gamma', 'True_b']),"gamma")
 new_weibull <- gen_distribution(15, mean(params[params$Distribution == 'weibull', 'True_a']), mean(params[params$Distribution == 'weibull', 'True_b']),"weibull")
 new_norm <- gen_distribution(15, mean(params[params$Distribution == 'norm', 'True_a']), mean(params[params$Distribution == 'norm', 'True_b']),"norm")
 new_lnorm <- gen_distribution(15, mean(params[params$Distribution == 'lnorm', 'True_a']), mean(params[params$Distribution == 'lnorm', 'True_b']),"lnorm")
@@ -263,20 +274,6 @@ dev.off()
 ################################################################################
 #Plot the estimated R's vs. the Simulated R
 ################################################################################
-
-# test <- expand.grid(seq(0, 10, 2), seq(0, 10, 2))
-# names(test) <- c("Mean", 'Std')
-# test$MSE <- seq(1, nrow(test), 1)
-# test <- rbind(test, test, test, test)
-# test$Distribution <- rep(c("Gamma", 'Weibull', 'Norm', 'Lnorm'), 
-# 	each=nrow(test)/4)
-# test <- do.call("rbind", replicate(100, test, simplify = F))
-# test$Period <- rep(1:100, each=144)
-# test$R <- 1.5
-# test$R_est <- ifelse(test$Distribution == "Gamma", 1.6 + rnorm(3600, 0, 0.5),
-# 	ifelse(test$Distribution == "Weibull", 1.4 + rnorm(3600, 0, 0.1),
-# 	ifelse(test$Distribution == "Norm", 1.2 + rnorm(3600, 0, 0.4),
-# 		1.3 + rnorm(3600, 0, 0.1))))
 
 Rt_plot <- Rt_mat %>%
 	group_by(est_a, est_b, est_type) %>%
@@ -305,8 +302,8 @@ ggplot() +
 
 test <- MSE_mat
 
-test$dev_a <- test$est_a - test$True_est_a
-test$dev_b <- test$est_b - test$True_est_b
+test$dev_a <- (test$est_a - test$True_est_a) / test$True_est_a
+test$dev_b <- (test$est_b - test$True_est_b) / test$True_est_b
 
 test$b_group <-as.factor(test$dev_b)
 test$a_group <-as.factor(test$dev_a)
@@ -315,13 +312,26 @@ testLine <- test %>%
   group_by(est_type) %>%
   summarize(True_est_a = mean(True_est_a), True_est_b = mean(True_est_b))
 
-layout(matrix(1:4, nrow = 2, ncol=2))
-for (dist in est_dists) {
-	curr <- test[test$est_type == dist,]
-	ggplot(data=curr, aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
+
+a_gam <- ggplot(data=test[test$est_type == 'gamma',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
 	geom_line() + 
-	scale_color_brewer(palette="Dark2")
-}
+	scale_color_brewer(palette="Dark2") +
+	ggsave("Gamma_MSE.png")
+
+a_wei <- ggplot(data=test[test$est_type == 'weibull',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
+	geom_line() + 
+	scale_color_brewer(palette="Dark2") +
+	ggsave("Weibull_MSE.png")
+
+a_norm <- ggplot(data=test[test$est_type == 'norm',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
+	geom_line() + 
+	scale_color_brewer(palette="Dark2") +
+	ggsave("Norm_MSE.png")
+
+a_lnorm <- ggplot(data=test[test$est_type == 'lnorm',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
+	geom_line() + 
+	scale_color_brewer(palette="Dark2") +
+	ggsave("LNorm_MSE.png")
 
 est_b <- 
   # ggplot(data=test, aes(x=est_a, y=MSE)) +
