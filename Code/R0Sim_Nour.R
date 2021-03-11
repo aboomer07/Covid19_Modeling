@@ -25,6 +25,8 @@ n <- window / delta
 sim_b <- 1.1^2/(6.6)
 sim_a <- (6.6)/sim_b
 
+#Function to generate model parameters correctly
+
 gen_distribution <- function(k, a, b, type) {
 	k <- 1:k
 	if (type == 'gamma') {
@@ -87,7 +89,6 @@ samp_pois <- function(R_val, study_len, num_people, sim_a, sim_b, sim_type) {
 serial_ests <- function(samps, num_vars, dists) {
 	num_vars <- 5
 	params <- list()
-	dists <- c('gamma', 'weibull', 'norm', 'lnorm')
 
 	for (i in 1:length(dists)) {
 		dist <- dists[i]
