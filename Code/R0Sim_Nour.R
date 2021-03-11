@@ -10,6 +10,7 @@ library(ggplot2)
 library(tidyverse)
 library(fitdistrplus)
 library(RColorBrewer)
+library(data.table)
 
 imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
@@ -21,8 +22,8 @@ n_days <- 180
 delta <- 1/24
 n <- window / delta
 # tau_est <- 10 # estimation window
-sim_b <- 1.1^2/6.6
-sim_a <- 6.6/sim_b
+sim_b <- 1.1^2/(6.6)
+sim_a <- (6.6)/sim_b
 
 gen_distribution <- function(k, a, b, type) {
 	k <- 1:k
@@ -165,7 +166,7 @@ nour_sim_data <- function(sim_a, sim_b, sim_type, days = n_days, tau_m = window,
 }
 
 Rt_est <- function(df, vals){
-	start <- 2
+	start <- 10
 	data <- data.frame(matrix(nrow = n_days * nrow(vals), ncol = 6))
 	names(data) <- c('Date', 'est_a', 'est_b', 'est_type', 'Rt', 'Est_Rt')
 
@@ -174,72 +175,61 @@ Rt_est <- function(df, vals){
 	data$est_b <- rep(vals[, 2], each=n_days)
 	data$est_type <- rep(vals[, 3], each=n_days)
 	data$Rt <- rep(df['R_val'][[1]], nrow(vals))
+	data$True_est_a <- rep(vals[, 4], each=n_days)
+	data$True_est_b <- rep(vals[, 5], each=n_days)
 
-	for (i in 1:nrow(data)){ 
-		a <- data[i, ]$est_a
-		b <- data[i, ]$est_b
-		type <- data[i, ]$est_type
-		t <- data[i, ]$Date
-
-		dist <- rev(gen_distribution(t-1, a, 1/b, type))
-		I <- df[which(df$days==t),]$infective_day
-		I_window <- df[df$days %in% 1:(t-1),]$infective_day
-		# R <- (I)/(sum(I_window * dist))
-		data[i, ]$Est_Rt <- (I)/(sum(I_window * dist))
+	for (i in start:nrow(data)){
+		if (data[i, ]$Date <= start) {
+			data[i, ]$Est_Rt <- NA
 		}
+		else {
+			a <- data[i, ]$est_a
+			b <- data[i, ]$est_b
+			type <- data[i, ]$est_type
+			t <- data[i, ]$Date
+
+			dist <- rev(gen_distribution(t-1, a, 1/b, type))
+			I <- df[which(df$days==t),]$infective_day
+			I_window <- df[df$days %in% 1:(t-1),]$infective_day
+			data[i, ]$Est_Rt <- (I)/(sum(I_window * dist))
+		}
+	}
 
 	return(data) 
 }
 
 MSE_est <- function(df){
 
-	df$SSE <- sum((df['Rt'] - df['Est_Rt'])^2)
+	df$SSE <- (df$Rt - df$Est_Rt)^2
+	df <- df %>% group_by(est_a, est_b, est_type) %>% summarize(MSE=mean(SSE, na.rm=TRUE), True_est_a=mean(True_est_a), True_est_b=mean(True_est_b))
 
-	MSE_mat <- df %>% group_by(est_a, est_b, est_type) %>%
-		summarize(MSE = mean(SSE))
-
-	# start <- 2
-	# mat <- matrix(nrow = length(vals[,1]), ncol = 3)
-	# type <- vals[1, ]$Distribution
-
-	# for (i in seq_along(vals[,1])){
-	# 	for (j in seq_along(vals[,2])){
-	# 		mean <- vals[i, 1]/vals[j, 2]
-	# 		std <- sqrt(mean*(1/vals[j, 2]))
-	# 		R_t <- list()
-	# 		for (t in start:dim(df)[1]) {
-	# 			gamma <- rev(discr_si(t, mean, std))
-	# 			I <- df[which(df$days==t),]$infective_day
-	# 			I_window <- df[df$days %in% 1:(t-1),]$infective_day
-	# 			R <- (I)/(sum(I_window * gamma))
-	# 			# daily_infec[which(daily_infec$days == t),]$R_est <- R_t
-	# 			R_t[t] <- R
-	# }
-	# 		R_t <- unlist(R_t, use.names=FALSE)
-
-	# 		MSE <- mean(((tail(rep(R_val, each = rep),-1)) - R_t)^2)
-	# 		mat[i, 1] <- vals[i, 1]
-	# 		mat[j, 2] <- vals[j, 2]
-	# 		mat[j, 3] <- MSE
-	# 	}
-	# }
-	colnames(MSE_mat) <- c('est_a', 'est_b', 'est_type', 'MSE')
-	return(MSE_mat)
+	return(df)
 }
 
 samps <- samp_pois(c(1.4), 25, 500, sim_a, sim_b, 'gamma')
 
 est_dists <- c("gamma", 'weibull', 'norm', 'lnorm')
 
-params <- serial_ests(samps, 5, est_dists)
-
 dat <- nour_sim_data(sim_a, sim_b, 'gamma')
 
-dist_vals <- params[params['Distribution'] == 'gamma',]
+params <- serial_ests(samps, 5, est_dists)
 
-mat <- Rt_est(dat, dist_vals)
+Rt_mat <- list()
+MSE_mat <- list()
 
-MSE_est <- MSE_est(mat)
+for (i in 1:length(est_dists)) {
+	dist <- est_dists[i]
+	dist_vals <- params[params['Distribution'] == dist,]
+
+	mat <- Rt_est(dat, dist_vals)
+	mat_MSE <- MSE_est(mat)
+
+	Rt_mat[[i]] <- mat
+	MSE_mat[[i]] <- mat_MSE
+}
+
+Rt_mat <- do.call('rbind', Rt_mat)
+MSE_mat <- do.call('rbind', MSE_mat)
 
 ################################################################################
 #Plot the different estimated distributions vs. original gamma
@@ -251,6 +241,7 @@ new_weibull <- gen_distribution(15, mean(params[params$Distribution == 'weibull'
 new_norm <- gen_distribution(15, mean(params[params$Distribution == 'norm', 'True_a']), mean(params[params$Distribution == 'norm', 'True_b']),"norm")
 new_lnorm <- gen_distribution(15, mean(params[params$Distribution == 'lnorm', 'True_a']), mean(params[params$Distribution == 'lnorm', 'True_b']),"lnorm")
 
+jpeg("DistCompare.jpg")
 layout(matrix(1:4, nrow = 2, ncol=2))
 plot(og_gamma, type="l")
 lines(new_gamma, type="l", col="green")
@@ -267,70 +258,86 @@ title("Normal")
 plot(og_gamma, type="l")
 lines(new_lnorm, type="l", col="orange")
 title("Log-normal")
+dev.off()
 
 ################################################################################
 #Plot the estimated R's vs. the Simulated R
 ################################################################################
 
-test <- expand.grid(seq(0, 10, 2), seq(0, 10, 2))
-names(test) <- c("Mean", 'Std')
-test$MSE <- seq(1, nrow(test), 1)
-test <- rbind(test, test, test, test)
-test$Distribution <- rep(c("Gamma", 'Weibull', 'Norm', 'Lnorm'), 
-	each=nrow(test)/4)
-test <- do.call("rbind", replicate(100, test, simplify = F))
-test$Period <- rep(1:100, each=144)
-test$R <- 1.5
-test$R_est <- ifelse(test$Distribution == "Gamma", 1.6 + rnorm(3600, 0, 0.5),
-	ifelse(test$Distribution == "Weibull", 1.4 + rnorm(3600, 0, 0.1),
-	ifelse(test$Distribution == "Norm", 1.2 + rnorm(3600, 0, 0.4),
-		1.3 + rnorm(3600, 0, 0.1))))
+# test <- expand.grid(seq(0, 10, 2), seq(0, 10, 2))
+# names(test) <- c("Mean", 'Std')
+# test$MSE <- seq(1, nrow(test), 1)
+# test <- rbind(test, test, test, test)
+# test$Distribution <- rep(c("Gamma", 'Weibull', 'Norm', 'Lnorm'), 
+# 	each=nrow(test)/4)
+# test <- do.call("rbind", replicate(100, test, simplify = F))
+# test$Period <- rep(1:100, each=144)
+# test$R <- 1.5
+# test$R_est <- ifelse(test$Distribution == "Gamma", 1.6 + rnorm(3600, 0, 0.5),
+# 	ifelse(test$Distribution == "Weibull", 1.4 + rnorm(3600, 0, 0.1),
+# 	ifelse(test$Distribution == "Norm", 1.2 + rnorm(3600, 0, 0.4),
+# 		1.3 + rnorm(3600, 0, 0.1))))
 
-test <- test %>%
-	group_by(Mean, Std, Distribution) %>%
+Rt_plot <- Rt_mat %>%
+	group_by(est_a, est_b, est_type) %>%
 	mutate(id = cur_group_id()) %>%
-	group_by(Distribution, Period) %>%
-	mutate(R_max = max(R_est),
-	       R_min = min(R_est))
+	group_by(est_type, Date) %>%
+	mutate(R_max = max(Est_Rt),
+	       R_min = min(Est_Rt))
 
 ggplot() +
-	geom_line(data = test, aes(x = Period, y=R_est, group=id, color=Distribution), alpha=0.3) +
-	geom_line(data = test, aes(x=Period, y=R), color = "red", size=1) +
+	geom_line(data = Rt_plot, aes(x = Date, y=Est_Rt, group=id, color=est_type), alpha=0.3) +
+	geom_line(data = Rt_plot, aes(x=Date, y=Rt), color = "red", size=1) +
 	scale_color_brewer(palette="Dark2") +
 	theme_minimal()
 
 
 ggplot() +
-	geom_ribbon(data = test, aes(x=Period, ymin = R_min, ymax = R_max, fill=Distribution), alpha=0.6) +
-	geom_line(data = test, aes(x=Period, y=R), color = "red", size=1) +
+	geom_ribbon(data = Rt_plot, aes(x=Date, ymin = R_min, ymax = R_max, fill=est_type), alpha=0.6) +
+	geom_line(data = Rt_plot, aes(x=Date, y=Rt), color = "red", size=1) +
 	scale_fill_brewer(palette="Dark2") +
-	theme_minimal()
+	theme_minimal() +
+	ggsave("Rt_Est.png")
 
 ################################################################################
 #Plot the MSE vs. the Mean and Standard Dev
 ################################################################################
 
-test$Std<-as.factor(test$Std)
-test$Mean<-as.factor(test$Mean)
+test <- MSE_mat
+
+test$dev_a <- test$est_a - test$True_est_a
+test$dev_b <- test$est_b - test$True_est_b
+
+test$b_group <-as.factor(test$dev_b)
+test$a_group <-as.factor(test$dev_a)
 
 testLine <- test %>%
-  group_by(Distribution) %>%
-  summarize(mean = mean(True_Mean), Std=mean(True_Std))
+  group_by(est_type) %>%
+  summarize(True_est_a = mean(True_est_a), True_est_b = mean(True_est_b))
 
-Std<-test %>%
-  ggplot( aes(x=Mean, y=MSE, group=Std, color=Std)) +
-  geom_line()+ 
-  facet_grid(~ Distribution)+ 
-  geom_vline(data=testLine, aes(xintercept = mean), linetype="dotted" )+
-  scale_color_brewer(palette="Dark2")
-Std
+layout(matrix(1:4, nrow = 2, ncol=2))
+for (dist in est_dists) {
+	curr <- test[test$est_type == dist,]
+	ggplot(data=curr, aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
+	geom_line() + 
+	scale_color_brewer(palette="Dark2")
+}
 
-Mean <- test %>%
-  ggplot( aes(x=Std, y=MSE, group=Mean, color=Mean)) +
+est_b <- 
+  # ggplot(data=test, aes(x=est_a, y=MSE)) +
+  ggplot(data=test[test$est_type == 'gamma',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
   geom_line()+ 
-  facet_grid(~ Distribution)+ 
-  geom_vline(data=testLine, aes(xintercept=Std))+
+  # facet_grid(~ est_type, scales='free')+ 
+  # geom_vline(data=testLine[testLine$est_type == 'gamma', ], aes(xintercept = True_est_a), linetype="dotted") +
   scale_color_brewer(palette="Dark2")
-Mean
+est_b
+
+est_a <- test %>%
+  ggplot( aes(x=est_b, y=MSE, group=est_a, color=est_a)) +
+  geom_line()+ 
+  facet_grid(~ est_type)+ 
+  geom_vline(data=testLine, aes(xintercept=est_b))+
+  scale_color_brewer(palette="Dark2")
+est_a
 
 
