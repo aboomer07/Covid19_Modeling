@@ -143,7 +143,7 @@ nour_sim(noisy = T, plotname = 'StepR_noisy_CI')
 
 discr_si <- function(k, mu, sigma) {
 
-	k <- 1:(k)
+	k <- 1:(k-1)
 
 
   if (sigma < 0) {
@@ -255,6 +255,56 @@ nour_sim_manual <- function(days = n_days, tau_m = window, tau_e = tau_est, R = 
 	return(daily_infec)
 
 }
+
+nour_sim_data <- function(days = n_days, tau_m = window, R = R_val, N = n, noisy = F) {
+
+	data <- data.frame(matrix(nrow = days*24, ncol = 4))
+	colnames(data) <- c('t', 'days', 'R_t', 'infective')
+	data$t <- 1:dim(data)[1]
+	data$days <- rep(1:days, each = 24)
+	data$infective[1:(tau_m*24)] <- round(seq(10, 100, length.out = tau_m*24))
+	data$R_t <- rep(R, each = rep*24)
+
+	if (noisy) {
+		noise <- rnorm(dim(data)[1], 0.15, 0.1)
+		data$R_t <- data$R_t + noise
+	}
+
+	# jp new:
+	mean <- 6.6*24
+	std <- 1.1*24
+	beta <- std^2/mean
+	alpha <- mean/beta
+
+	print(alpha)
+	print(beta)
+
+	range <- seq(0, ((tau_m*24)-1), 1)
+	gamma_y <- dgamma(range, shape=alpha, rate=1/beta)
+	gamma <- rev(gamma_y)
+
+	print(sum(gamma))
+
+	# simulate outbreak
+	start <- ((tau_m) * 24) + 1
+
+	for (t in start:dim(data)[1]) {
+		I_vec <- data[data$t %in% (t-N):(t-1),]$infective
+		R_mean <- mean(data[which(data$t==t),]$R_t)
+		total_infec <- sum(I_vec * gamma)
+
+		infec <- R_mean * total_infec
+		data[which(data$t == t),]$infective <- infec
+	}
+
+	# aggregate to daily (avg = /delta)
+	daily_infec <- data %>%
+	group_by(days) %>%
+	summarise(infective_day = round(mean(infective)), R_val = mean(R_t))
+
+	return(daily_infec)
+}
+
 
 
 mean <- 6.6
