@@ -375,5 +375,10 @@ for (i in 1:length(dists)) {
 
 params <- do.call('rbind', params)
 
+og_gamma <- gen_distribution(15, alpha, beta)
+new_gamma <- gen_distribution(15, mean(params[params$Distribution == 'gamma', 'True_a']))
+
+layout(matrix(1:4, nrow = 2, ncol=2))
+plot()
 
 
