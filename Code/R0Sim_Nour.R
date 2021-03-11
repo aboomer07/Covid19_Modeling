@@ -407,16 +407,17 @@ MSE_gamma <- function(df, vals){
 				R_t[t] <- R
 	}
 			R_t <- unlist(R_t, use.names=FALSE)
-			MSE <- mean((R_t - rep(R, each = rep*24)-1)^2)
+			MSE <- mean((R_t - tail(rep(R_val, each = rep),-1))^2)
 			mat[i, 1] <- vals[i, 1]
 			mat[j, 2] <- vals[j, 2]
 			mat[j, 3] <- MSE
 		}
 	}
+	colnames(mat) <- c('alpha', 'beta', 'MSE')
 	return(mat)
 }
 
-MSE_gamma <- MSE_gamma(dat, gamma_vals[1:2,])
+MSE_gamma <- MSE_gamma(dat, gamma_vals[1:3,])
 
 
 R_t_gamma <- function(df, vals){
