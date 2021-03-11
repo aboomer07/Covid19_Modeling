@@ -143,7 +143,7 @@ nour_sim(noisy = T, plotname = 'StepR_noisy_CI')
 
 discr_si <- function(k, mu, sigma) {
 
-	k <- 1:(k)
+	k <- 1:(k-1)
 
 
   if (sigma < 0) {
@@ -256,6 +256,56 @@ nour_sim_manual <- function(days = n_days, tau_m = window, tau_e = tau_est, R = 
 
 }
 
+nour_sim_data <- function(days = n_days, tau_m = window, R = R_val, N = n, noisy = F) {
+
+	data <- data.frame(matrix(nrow = days*24, ncol = 4))
+	colnames(data) <- c('t', 'days', 'R_t', 'infective')
+	data$t <- 1:dim(data)[1]
+	data$days <- rep(1:days, each = 24)
+	data$infective[1:(tau_m*24)] <- round(seq(10, 100, length.out = tau_m*24))
+	data$R_t <- rep(R, each = rep*24)
+
+	if (noisy) {
+		noise <- rnorm(dim(data)[1], 0.15, 0.1)
+		data$R_t <- data$R_t + noise
+	}
+
+	# jp new:
+	mean <- 6.6*24
+	std <- 1.1*24
+	beta <- std^2/mean
+	alpha <- mean/beta
+
+	print(alpha)
+	print(beta)
+
+	range <- seq(0, ((tau_m*24)-1), 1)
+	gamma_y <- dgamma(range, shape=alpha, rate=1/beta)
+	gamma <- rev(gamma_y)
+
+	print(sum(gamma))
+
+	# simulate outbreak
+	start <- ((tau_m) * 24) + 1
+
+	for (t in start:dim(data)[1]) {
+		I_vec <- data[data$t %in% (t-N):(t-1),]$infective
+		R_mean <- mean(data[which(data$t==t),]$R_t)
+		total_infec <- sum(I_vec * gamma)
+
+		infec <- R_mean * total_infec
+		data[which(data$t == t),]$infective <- infec
+	}
+
+	# aggregate to daily (avg = /delta)
+	daily_infec <- data %>%
+	group_by(days) %>%
+	summarise(infective_day = round(mean(infective)), R_val = mean(R_t))
+
+	return(daily_infec)
+}
+
+
 
 mean <- 6.6
 std <- 1.1
@@ -332,8 +382,62 @@ nour_sim_manual(plotname = 'StepR')
 nour_sim_manual(tau_e = 8, plotname = 'StepR_noisy_Tau8')
 
 
+################################################################################
+# Evaluating
+################################################################################
 
 
+dat <- nour_sim_data()
 
 
+MSE_gamma <- function(df, vals){
+	start <- 2
+	mat <- matrix(nrow = length(vals[,1]), ncol = 3)
+	for (i in seq_along(vals[,1])){
+		for (j in seq_along(vals[,2])){
+			mean <- vals[i, 1]/vals[j, 2]
+			std <- sqrt(mean*(1/vals[j, 2]))
+			R_t <- list()
+			for (t in start:dim(df)[1]) {
+				gamma <- rev(discr_si(t, mean, std))
+				I <- df[which(df$days==t),]$infective_day
+				I_window <- df[df$days %in% 1:(t-1),]$infective_day
+				R <- (I)/(sum(I_window * gamma))
+				# daily_infec[which(daily_infec$days == t),]$R_est <- R_t
+				R_t[t] <- R
+	}
+			R_t <- unlist(R_t, use.names=FALSE)
+			MSE <- mean((R_t - rep(R, each = rep*24)-1)^2)
+			mat[i, 1] <- vals[i, 1]
+			mat[j, 2] <- vals[j, 2]
+			mat[j, 3] <- MSE
+		}
+	}
+	return(mat)
+}
+
+MSE_gamma <- MSE_gamma(dat, gamma_vals[1:2,])
+
+
+R_t_gamma <- function(df, vals){
+	start <- 2
+	mat <- matrix(nrow = n_days, ncol = length(vals[,1]))
+	for (i in seq_along(vals[,1])){
+		for (j in seq_along(vals[,2])){
+			mean <- vals[i, 1]/vals[j, 2]
+			std <- sqrt(mean*(1/vals[j, 2]))
+			for (t in start:dim(df)[1]) {
+				gamma <- rev(discr_si(t, mean, std))
+				I <- df[which(df$days==t),]$infective_day
+				I_window <- df[df$days %in% 1:(t-1),]$infective_day
+				R <- (I)/(sum(I_window * gamma))
+				# daily_infec[which(daily_infec$days == t),]$R_est <- R_t
+				mat[t, j] <- R
+	}
+		}
+	}
+	return(mat)
+}
+
+R_t_gamma(dat, gamma_vals[1:2,])
 
