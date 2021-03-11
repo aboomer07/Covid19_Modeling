@@ -344,6 +344,60 @@ samp_pois <- function(data) {
 
 samps <- samp_pois(data)
 
+dat <- nour_sim_data()
+
+MSE_gamma <- function(df, vals){
+	start <- 2
+	mat <- matrix(nrow = length(vals[,1]), ncol = 3)
+	for (i in seq_along(vals[,1])){
+		for (j in seq_along(vals[,2])){
+			mean <- vals[i, 1]/vals[j, 2]
+			std <- sqrt(mean*(1/vals[j, 2]))
+			R_t <- list()
+			for (t in start:dim(df)[1]) {
+				gamma <- rev(discr_si(t, mean, std))
+				I <- df[which(df$days==t),]$infective_day
+				I_window <- df[df$days %in% 1:(t-1),]$infective_day
+				R <- (I)/(sum(I_window * gamma))
+				# daily_infec[which(daily_infec$days == t),]$R_est <- R_t
+				R_t[t] <- R
+	}
+			R_t <- unlist(R_t, use.names=FALSE)
+			MSE <- mean(((tail(rep(R_val, each = rep),-1)) - R_t)^2)
+			mat[i, 1] <- vals[i, 1]
+			mat[j, 2] <- vals[j, 2]
+			mat[j, 3] <- MSE
+		}
+	}
+	colnames(mat) <- c('alpha', 'beta', 'MSE')
+	return(mat)
+}
+
+MSE_gamma <- MSE_gamma(dat, gamma_vals[1:10,])
+
+
+R_t_gamma <- function(df, vals){
+	start <- 2
+	mat <- matrix(nrow = n_days, ncol = length(vals[,1]))
+	for (i in seq_along(vals[,1])){
+		for (j in seq_along(vals[,2])){
+			mean <- vals[i, 1]/vals[j, 2]
+			std <- sqrt(mean*(1/vals[j, 2]))
+			for (t in start:dim(df)[1]) {
+				gamma <- rev(discr_si(t, mean, std))
+				I <- df[which(df$days==t),]$infective_day
+				I_window <- df[df$days %in% 1:(t-1),]$infective_day
+				R <- (I)/(sum(I_window * gamma))
+				# daily_infec[which(daily_infec$days == t),]$R_est <- R_t
+				mat[t, j] <- R
+	}
+		}
+	}
+	return(mat)
+}
+
+R_t_gamma(dat, gamma_vals[1:2,])
+
 # nour_sim_manual(R = 4, plotname = 'ConstantR')
 
 # nour_sim_manual(plotname = 'StepR')
