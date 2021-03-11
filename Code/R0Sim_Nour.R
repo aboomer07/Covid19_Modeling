@@ -349,6 +349,16 @@ dat <- nour_sim_data()
 MSE_gamma <- function(df, vals){
 	start <- 2
 	mat <- matrix(nrow = length(vals[,1]), ncol = 3)
+
+	for (i in 1:nrow(vals)) {
+		a <- vals[i, 1]
+		b <- vals[i, 2]
+
+		R_t <- list()
+	}
+
+
+
 	for (i in seq_along(vals[,1])){
 		for (j in seq_along(vals[,2])){
 			mean <- vals[i, 1]/vals[j, 2]
@@ -363,6 +373,7 @@ MSE_gamma <- function(df, vals){
 				R_t[t] <- R
 	}
 			R_t <- unlist(R_t, use.names=FALSE)
+
 			MSE <- mean(((tail(rep(R_val, each = rep),-1)) - R_t)^2)
 			mat[i, 1] <- vals[i, 1]
 			mat[j, 2] <- vals[j, 2]
@@ -373,7 +384,9 @@ MSE_gamma <- function(df, vals){
 	return(mat)
 }
 
-MSE_gamma <- MSE_gamma(dat, gamma_vals[1:10,])
+gamma_vals <- params[params['Distribution'] == 'gamma',]
+
+MSE_gamma <- MSE_gamma(dat, gamma_vals)
 
 
 R_t_gamma <- function(df, vals){
