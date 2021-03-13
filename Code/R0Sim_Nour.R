@@ -11,6 +11,8 @@ library(tidyverse)
 library(fitdistrplus)
 library(RColorBrewer)
 library(data.table)
+library(np)
+library(KernSmooth)
 
 imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
@@ -134,6 +136,12 @@ serial_ests <- function(samps, num_vars, dists) {
 	return(params)
 }
 
+# estimate serial interval nonparametically
+serial_ests_nonpara <- function(samps, correction, range){
+	h_nsr <- 1.059*sd(samps)*length(samps)^(-1/5)
+	kernel_est <- bkde(samps, bandwidth = h_nsr + correction, range.x = range, gridsize = max(range))
+}
+
 nour_sim_data <- function(sim_a, sim_b, sim_type, days = n_days, tau_m = window, R = R_val, N = n, noisy = F) {
 
 	data <- data.frame(matrix(nrow = days*24, ncol = 4))
@@ -208,6 +216,32 @@ Rt_est <- function(df, vals, distribution){
 	}
 
 	return(data) 
+}
+
+Rt_est_nonpara <- function (df, samps, corrections){
+	start <- 10
+	data <- data.frame(matrix(nrow = n_days * length(corrections), ncol = 4))
+	names(data) <- c('Date', 'Cor_Par', 'Rt', 'Est_Rt')
+
+	data$Date <- rep(1:n_days, length(corrections))
+	data$Cor_Par <- rep(corrections, each=n_days) # instead of distribution parameters we can correct/opt bandwidth
+	data$Rt <- rep(df['R_val'][[1]], length(corrections))
+
+	for (i in start:nrow(data)){
+		if (data[i, ]$Date <= start) {
+			data[i, ]$Est_Rt <- NA
+		}
+		else {
+			correction <- data[i, ]$Cor_Par
+			t <- data[i, ]$Date
+
+			dist <- rev(serial_ests_nonpara(samps, correction, range = c(1,(t-1)))$y)
+			I <- df[which(df$days==t),]$infective_day
+			I_window <- df[df$days %in% 1:(t-1),]$infective_day
+			data[i, ]$Est_Rt <- (I)/(sum(I_window * dist))
+		}
+	}
+	return(data)
 }
 
 MSE_est <- function(df){
