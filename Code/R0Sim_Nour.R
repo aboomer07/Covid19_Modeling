@@ -13,6 +13,7 @@ library(RColorBrewer)
 library(data.table)
 library(np)
 library(KernSmooth)
+library(mixdist)
 
 imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
@@ -29,8 +30,9 @@ n <- window / delta
 sim_b <- 1.1^2/(6.6)
 sim_a <- (6.6)/sim_b
 
-a_weibull <- 10
-b_weibull <- 6
+weib<-weibullparinv(1.96, 8.47, loc = 0) #values from June Young Chun, Gyuseung Baek
+a_weibull <- weib$mu
+b_weibull <- weib$sigma
 
 a_norm <- 6.6
 b_norm <- 1.1
