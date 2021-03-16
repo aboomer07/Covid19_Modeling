@@ -24,8 +24,28 @@ n_days <- 180
 delta <- 1/24
 n <- window / delta
 # tau_est <- 10 # estimation window
+
+  #parameters of the different distributions
 sim_b <- 1.1^2/(6.6)
 sim_a <- (6.6)/sim_b
+
+a_weibull <- 10
+b_weibull <- 6
+
+a_norm <- 6.6
+b_norm <- 1.1
+
+a_lnorm <- 1.5
+b_lnorm <- 0.3
+
+param_a <- c(sim_a, a_weibull, a_norm, a_lnorm)
+param_b <- c(sim_b, b_weibull, b_norm, b_lnorm)
+dist <- c("gamma", 'weibull', 'norm', 'lnorm' )
+
+mat_param<- cbind(dist, param_a, param_b )
+mat_param <- as.data.frame(mat_param)
+mat_param$param_a <-as.numeric(mat_param$param_a)
+mat_param$param_b <-as.numeric(mat_param$param_b)
 
 #Function to generate model parameters correctly
 
@@ -88,53 +108,62 @@ samp_pois <- function(R_val, study_len, num_people, sim_a, sim_b, sim_type) {
 	return(samples)
 }
 
-serial_ests <- function(samps, num_vars, dists) {
-	num_vars <- 5
-	params <- list()
-
-	for (i in 1:length(dists)) {
-		dist <- dists[i]
-		fit <- fitdist(samps, distr = dist)
-
-		a_est <- fit$estimate[1]
-		b_est <- fit$estimate[2]
-
-		a_sd <- fit$sd[1]
-		b_sd <- fit$sd[2]
-
-		if (dist == 'gamma') {
-			mean <- a_est / b_est
-			var <- a_est * (b_est^2)
-			mean <- mean - 1
-			b_est <- mean / sqrt(var)
-			a_est <- mean / b_est
-		}
-
-		lower_a <- a_est - (1.96 * a_sd)
-		upper_a <- a_est + (1.96 * a_sd)
-
-		lower_b <- b_est - (1.96 * b_sd)
-		upper_b <- b_est + (1.96 * b_sd)
-
-		vals <- expand.grid(seq(lower_a, upper_a, ((upper_a - lower_a)/num_vars)),
-			seq(lower_b, upper_b, ((upper_b - lower_b)/num_vars)))
-
-		names(vals) <- c("Param_a", 'Param_b')
-		de <- data.frame(a_est, b_est)
-		names(de) <- c("Param_a", 'Param_b')
-		vals <- rbind(vals, de)
-		vals$Distribution <- dist
-		vals$True_a <- a_est
-		vals$True_b <- b_est
-
-		params[[i]] <- vals
-
-	}
-
-	params <- do.call('rbind', params)
-
-	return(params)
+serial_ests <- function( mat_param, num_vars, dists) {
+  num_vars <- 10
+  params <- list()
+  
+  for (i in 1:length(dists)) {
+    dist <- dists[i]
+    
+    #recover parameters
+    a <- mat_param[mat_param$dist == dist, 'param_a']
+    b <- mat_param[mat_param$dist == dist, 'param_b']
+    
+    #get samps based on Poisson
+    samps <- samp_pois(c(1.4), 25, 2000, a, b, dist)
+    
+    #fit different ditributions with a gamma
+    fit <- fitdist(samps, "gamma")
+    
+    a_est <- fit$estimate[1]
+    b_est <- fit$estimate[2]
+    
+    a_sd <- fit$sd[1]
+    b_sd <- fit$sd[2]
+    
+    
+    mean <- a_est / b_est
+    var <- a_est * (b_est^2)
+    mean <- mean - 1
+    b_est <- mean / sqrt(var)
+    a_est <- mean / b_est
+    
+    
+    lower_a <- a_est - (1.96 * a_sd)
+    upper_a <- a_est + (1.96 * a_sd)
+    
+    lower_b <- b_est - (1.96 * b_sd)
+    upper_b <- b_est + (1.96 * b_sd)
+    
+    vals <- expand.grid(seq(lower_a, upper_a, ((upper_a - lower_a)/num_vars)),
+                        seq(lower_b, upper_b, ((upper_b - lower_b)/num_vars)))
+    
+    names(vals) <- c("Param_a", 'Param_b')
+    de <- data.frame(a_est, b_est)
+    names(de) <- c("Param_a", 'Param_b')
+    vals <- rbind(vals, de)
+    vals$Distribution <- dist
+    vals$True_a <- a_est
+    vals$True_b <- b_est
+    
+    params[[i]] <- vals
+  }
+  
+  params <- do.call('rbind', params)
+  
+  return(params)
 }
+
 
 # estimate serial interval nonparametically
 serial_ests_nonpara <- function(samps, correction, range){
@@ -252,13 +281,11 @@ MSE_est <- function(df){
 	return(df)
 }
 
-samps <- samp_pois(c(1.4), 25, 2000, sim_a, sim_b, 'gamma')
-
 est_dists <- c("gamma", 'weibull', 'norm', 'lnorm')
 
 dat <- nour_sim_data(sim_a, sim_b, 'gamma')
 
-params <- serial_ests(samps, 5, est_dists)
+params <- serial_ests( mat_param, 10, est_dists)
 
 Rt_mat <- list()
 MSE_mat <- list()
@@ -278,14 +305,17 @@ Rt_mat <- do.call('rbind', Rt_mat)
 MSE_mat <- do.call('rbind', MSE_mat)
 
 ################################################################################
-#Plot the different estimated distributions vs. original gamma
+#Plot the different estimated distributions vs. original distributions
 ################################################################################
 
 og_gamma <- gen_distribution(15, sim_a, sim_b, "gamma")
 new_gamma <- gen_distribution(15, mean(params[params$Distribution == 'gamma', 'True_a']), mean(params[params$Distribution == 'gamma', 'True_b']),"gamma")
-new_weibull <- gen_distribution(15, mean(params[params$Distribution == 'weibull', 'True_a']), mean(params[params$Distribution == 'weibull', 'True_b']),"weibull")
-new_norm <- gen_distribution(15, mean(params[params$Distribution == 'norm', 'True_a']), mean(params[params$Distribution == 'norm', 'True_b']),"norm")
-new_lnorm <- gen_distribution(15, mean(params[params$Distribution == 'lnorm', 'True_a']), mean(params[params$Distribution == 'lnorm', 'True_b']),"lnorm")
+og_weibull <- gen_distribution(15, a_weibull, b_weibull, "weibull")
+new_weibull<- gen_distribution(15, mean(params[params$Distribution == 'weibull', 'True_a']), mean(params[params$Distribution == 'weibull', 'True_b']),"gamma")
+og_norm <- gen_distribution(15, a_norm, b_norm, "norm")
+new_norm <- gen_distribution(15, mean(params[params$Distribution == 'norm', 'True_a']), mean(params[params$Distribution == 'norm', 'True_b']),"gamma")
+og_lnorm <- gen_distribution(15, a_lnorm, b_lnorm, "lnorm")
+new_lnorm <- gen_distribution(15, mean(params[params$Distribution == 'lnorm', 'True_a']), mean(params[params$Distribution == 'lnorm', 'True_b']),"gamma")
 
 jpeg("DistCompare.jpg")
 layout(matrix(1:4, nrow = 2, ncol=2))
@@ -293,15 +323,15 @@ plot(og_gamma, type="l")
 lines(new_gamma, type="l", col="green")
 title("Gamma")
 
-plot(og_gamma, type="l")
+plot(og_weibull, type="l")
 lines(new_weibull, type="l", col="red")
 title("Weibull")
 
-plot(og_gamma, type="l")
+plot(og_norm, type="l")
 lines(new_norm, type="l", col="blue")
 title("Normal")
 
-plot(og_gamma, type="l")
+plot(og_lnorm, type="l")
 lines(new_lnorm, type="l", col="orange")
 title("Log-normal")
 dev.off()
