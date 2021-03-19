@@ -26,7 +26,42 @@ delta <- 1/24
 n <- window / delta
 # tau_est <- 10 # estimation window
 
-  #parameters of the different distributions
+ 
+######################################################################
+######## Set right parameters based on distribution and delta ########
+######################################################################
+
+gen_params = function(mean, variance, type, delta) {
+
+	if (type == 'norm') {
+		a = mean + 1/delta
+		b = variance*(1/delta)^2
+		return(c(a,b))
+	}
+
+	if (type == 'gamma') {
+		a = mean*variance
+		b = mean*(variance^2)/(1/delta)
+		return(c(a, b))
+	}
+
+	if (type == 'weibull') {
+		a = as.numeric(weibullpar(mean,variance)[1])
+		b = as.numeric(weibullpar(mean,variance)[2])*(1/delta)
+		return(c(a,b))
+	}
+
+	if (type == 'lnorm') {
+		a = exp(mean + variance/2) + ln(1/delta)
+		b = (exp(variance)-1)*exp(2*mean + variance^2)
+		return(c(a,b))
+	}
+
+}
+
+
+
+ #parameters of the different distributions
 sim_b <- 1.1^2/(6.6)
 sim_a <- (6.6)/sim_b
 
