@@ -34,88 +34,116 @@ n <- window / delta
 gen_params = function(mean, variance, type, delta) {
 
 	if (type == 'norm') {
-		a = mean + 1/delta
+		a = mean*(1/delta)
 		b = variance*(1/delta)^2
-		return(c(a,b))
+	return(c(a,b))
+	}
+
+	if (type == 'lnorm') {
+		a = log(mean^2/(sqrt(mean^2 + variance))) + log(1/delta)
+		b = log(1 + variance/mean^2)
+		#a = exp(mean + variance/2) + log(1/delta)
+		#b = (exp(variance)-1)*exp(2*mean + variance)
+	return(c(a,b))
 	}
 
 	if (type == 'gamma') {
-		a = mean*variance
-		b = mean*(variance^2)/(1/delta)
-		return(c(a, b))
+		a = mean^2/variance
+		b = (mean/variance)/(1/delta)
+	return(c(a, b))
 	}
 
 	if (type == 'weibull') {
 		a = as.numeric(weibullpar(mean,variance)[1])
 		b = as.numeric(weibullpar(mean,variance)[2])*(1/delta)
-		return(c(a,b))
-	}
-
-	if (type == 'lnorm') {
-		a = exp(mean + variance/2) + ln(1/delta)
-		b = (exp(variance)-1)*exp(2*mean + variance^2)
-		return(c(a,b))
+	return(c(a,b))
 	}
 
 }
 
+#parameters of the different distributions
+#sim_b <- 1.1^2/(6.6)
+#sim_a <- (6.6)/sim_b
+#
+#weib<-weibullparinv(1.96, 8.47, loc = 0) #values from June Young Chun, Gyuseung Baek
+#a_weibull <- weib$mu
+#b_weibull <- weib$sigma
+#
+#a_norm <- 6.6
+#b_norm <- 1.1
+#
+#a_lnorm <- 1.5
+#b_lnorm <- 0.3
+#
+#param_a <- c(sim_a, a_weibull, a_norm, a_lnorm)
+#param_b <- c(sim_b, b_weibull, b_norm, b_lnorm)
+#dist <- c("gamma", 'weibull', 'norm', 'lnorm' )
+#
+#mat_param<- cbind(dist, param_a, param_b )
+#mat_param <- as.data.frame(mat_param)
+#mat_param$param_a <-as.numeric(mat_param$param_a)
+#mat_param$param_b <-as.numeric(mat_param$param_b)
 
+######################################################################
+############ Generate distributions with right parameters ############
+######################################################################
 
- #parameters of the different distributions
-sim_b <- 1.1^2/(6.6)
-sim_a <- (6.6)/sim_b
+gen_distribution = function(k, a, b, type, delta) { 
+	k = 1:(k*(1/delta))
 
-weib<-weibullparinv(1.96, 8.47, loc = 0) #values from June Young Chun, Gyuseung Baek
-a_weibull <- weib$mu
-b_weibull <- weib$sigma
+	if (type == 'norm') {
+		omega = dnorm(k, a, b)
+	return(omega)
+	}
 
-a_norm <- 6.6
-b_norm <- 1.1
+	if (type == 'lnorm') {
+		omega = dlnorm(k, a, b)
+	return(omega)
+	}
 
-a_lnorm <- 1.5
-b_lnorm <- 0.3
-
-param_a <- c(sim_a, a_weibull, a_norm, a_lnorm)
-param_b <- c(sim_b, b_weibull, b_norm, b_lnorm)
-dist <- c("gamma", 'weibull', 'norm', 'lnorm' )
-
-mat_param<- cbind(dist, param_a, param_b )
-mat_param <- as.data.frame(mat_param)
-mat_param$param_a <-as.numeric(mat_param$param_a)
-mat_param$param_b <-as.numeric(mat_param$param_b)
-
-#Function to generate model parameters correctly
-
-gen_distribution <- function(k, a, b, type) {
-	k <- 1:k
 	if (type == 'gamma') {
-		cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, scale = b)
-
-		res <- k * cdf_gamma(k, a, b) + 
-		(k - 2) * cdf_gamma(k - 2, a, b) - 2 * (k - 1) * cdf_gamma(k - 1, a, b)
-		res <- res + a * b * (2 * cdf_gamma(k - 1, a + 1, b) - 
-		                      cdf_gamma(k - 2, a + 1, b) - cdf_gamma(k, a + 1, b))
-		res <- sapply(res, function(e) max(0, e))
-
-		return(res)
+		omega = dgamma(k, a, b)
+	return(omega)
 	}
 
 	if (type == 'weibull') {
-		res <- dweibull(k, a, b)
-		return(res)
-	}
-
-	if (type == 'norm') {
-		res <- dnorm(k, a, b)
-		return(res)
-	}
-
-	if (type == 'lnorm') {
-		res <- dlnorm(k, a, b)
-		return(res)
+		omega == dweibull(k, a, b)
+	return(omega)
 	}
 
 }
+
+
+#gen_distribution <- function(k, a, b, type) {
+#	k <- 1:k
+#	if (type == 'gamma') {
+#		cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, scale = b)
+#
+#		res <- k * cdf_gamma(k, a, b) + 
+#		(k - 2) * cdf_gamma(k - 2, a, b) - 2 * (k - 1) * cdf_gamma(k - 1, a, b)
+#		res <- res + a * b * (2 * cdf_gamma(k - 1, a + 1, b) - 
+#		                      cdf_gamma(k - 2, a + 1, b) - cdf_gamma(k, a + 1, b))
+#		res <- sapply(res, function(e) max(0, e))
+#
+#		return(res)
+#	}
+#
+#	if (type == 'weibull') {
+#		res <- dweibull(k, a, b)
+#		return(res)
+#	}
+#
+#	if (type == 'norm') {
+#		res <- dnorm(k, a, b)
+#		return(res)
+#	}
+#
+#	if (type == 'lnorm') {
+#		res <- dlnorm(k, a, b)
+#		return(res)
+#	}
+#
+#}
 
 # Do a serial interval "study"
 samp_pois <- function(R_val, study_len, num_people, sim_a, sim_b, sim_type) {
