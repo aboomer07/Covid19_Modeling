@@ -219,10 +219,11 @@ Rt_est <- function(df, vals, type) {
     else {
       a <- data[i,]$est_a
       b <- data[i,]$est_b
-      mean <- a*b
+      mean <- a/b
+      var <- a/(b^2)
       t <- data[i,]$Date
 
-      dist <- rev(gen_distribution(t - 1, a, b, type, 1))
+      dist <- rev(gen_distribution(t - 1, mean, var, type, 1))
       I <- df[which(df$days == t),]$infective_day
       I_window <- df[df$days %in% 1:(t - 1),]$infective_day
       data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
@@ -262,7 +263,7 @@ MSE_est <- function(df) {
 
   df$SSE <- (df$Rt - df$Est_Rt)^2
   df <- df %>%
-    group_by(est_a, est_b, est_type) %>%
+    group_by(est_a, est_b) %>%
     summarize(MSE = mean(SSE, na.rm = TRUE), True_est_a = mean(True_est_a), True_est_b = mean(True_est_b))
 
   return(df)
