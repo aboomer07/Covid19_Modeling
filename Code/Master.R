@@ -24,7 +24,6 @@ sim_mean <- 6.6
 
 samps <- samp_pois(1.4, study_len = 25, num_people = 2000, sim_mu = sim_mean, sim_sig = sim_var, 'gamma', delta = 1) # check how to work with delta here
 
-
 ######################################################################
 ############## Estimate Serial Interval ##############################
 ######################################################################
@@ -48,22 +47,23 @@ MSE <- MSE_est(Rt)
 #Plot the estimated R's vs. the Simulated R
 ################################################################################
 
-Rt_plot <- Rt_mat %>%
-	group_by(est_a, est_b, est_type) %>%
+Rt_plot <- Rt %>%
+	group_by(est_a, est_b) %>%
 	mutate(id = cur_group_id()) %>%
-	group_by(est_type, Date) %>%
+	group_by(Date) %>%
 	mutate(R_max = max(Est_Rt),
 	       R_min = min(Est_Rt))
 
 ggplot() +
-	geom_line(data = Rt_plot, aes(x = Date, y=Est_Rt, group=id, color=est_type), alpha=0.3) +
+	geom_line(data = Rt_plot, aes(x = Date, y=Est_Rt, group=id), alpha=0.3) +
 	geom_line(data = Rt_plot, aes(x=Date, y=Rt), color = "red", size=1) +
 	scale_color_brewer(palette="Dark2") +
 	theme_minimal()
 
 
 ggplot() +
-	geom_ribbon(data = Rt_plot, aes(x=Date, ymin = R_min, ymax = R_max, fill=est_type), alpha=0.6) +
+	geom_ribbon(data = Rt_plot, 
+		aes(x=Date, ymin = R_min, ymax = R_max), alpha=0.6) +
 	geom_line(data = Rt_plot, aes(x=Date, y=Rt), color = "red", size=1) +
 	scale_fill_brewer(palette="Dark2") +
 	theme_minimal() +
