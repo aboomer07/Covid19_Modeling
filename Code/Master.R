@@ -22,8 +22,7 @@ sim_mean <- 6.6
 ############## Simulate Serial Interval Data #########################
 ######################################################################
 
-samps <- samp_pois(1.4, study_len = 25, num_people = 2000, sim_mu = sim_mean, sim_sig = sim_var,
-				   'gamma', delta = 1) # check how to work with delta here
+samps <- samp_pois(1.4, study_len = 25, num_people = 2000, sim_mu = sim_mean, sim_sig = sim_var, 'gamma', delta = 1) # check how to work with delta here
 
 
 ######################################################################
@@ -36,15 +35,14 @@ vals <- serial_ests(samps) # here we obtain the params for Rt_est
 ############## Simulate Incidence ####################################
 ######################################################################
 
-incid <- nour_sim_data(sim_mu, sim_var, 'gamma', 24) # important! must be same dist as in samp_pois
+incid <- nour_sim_data(sim_mean, sim_var, 'gamma', 24) # important! must be same dist as in samp_pois
 
 ######################################################################
 ##################### Estimate Rt ####################################
 ######################################################################
 
-Rt <- Rt_est(incid, vals, type = 'gamma')
+Rt <- Rt_est(incid, vals, 'gamma')
 MSE <- MSE_est(Rt)
-
 
 ################################################################################
 #Plot the estimated R's vs. the Simulated R
