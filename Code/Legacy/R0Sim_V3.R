@@ -80,7 +80,7 @@ for (t in (window + 1):length(actual_data$date)) {
 #Estimate R via the function in the EpiEstim package
 tsi_est <- estimate_R(actual_data$infective_new, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
 
-jpeg("TSISim_constant.jpeg")
+jpeg("../../TSISim_constant.jpeg")
 par(mfrow=c(2,1), tcl=0.5, family="serif", mai=c(1,1,0.3,0.3))
 plot(actual_data$infective_new, type='l', xlab='Number of Days', ylab = 'Daily Infections')
 plot(tsi_est$R$`Mean(R)`, type ="l", ylim = c(0,3), xlab='Number of Days', ylab='Rt')
@@ -104,7 +104,7 @@ for (t in (window + 1):length(actual_data$date)) {
 #Estimate R via the function in the EpiEstim package
 tsi_est <- estimate_R(actual_data$infective_new, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
 
-jpeg("TSISim_step.jpeg")
+jpeg("../../TSISim_step.jpeg")
 par(mfrow=c(2,1), tcl=0.5, family="serif", mai=c(1,1,0.3,0.3))
 plot(actual_data$infective_new, type='l', xlab='Number of Days', ylab = 'Daily Infections')
 plot(tsi_est$R$`Mean(R)`, type ="l", ylim = c(0,3), xlab='Number of Days', ylab='Rt')
@@ -129,7 +129,7 @@ for (t in (window + 1):length(actual_data$date)) {
 #Estimate R via the function in the EpiEstim package
 tsi_est <- estimate_R(actual_data$infective_new, method = 'parametric_si', config = make_config(list(mean_si = mean, std_si = std)))
 
-jpeg("TSISim_noisystep.jpeg")
+jpeg("../../TSISim_noisystep.jpeg")
 par(mfrow=c(2,1), tcl=0.5, family="serif", mai=c(1,1,0.3,0.3))
 plot(actual_data$infective_new, type='l', xlab='Number of Days', ylab = 'Daily Infections')
 plot(tsi_est$R$`Mean(R)`, type ="l", ylim = c(0,3), xlab='Number of Days', ylab='Rt')

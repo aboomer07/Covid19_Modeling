@@ -10,7 +10,7 @@ import country_converter as coco
 # import data
 # Force the correct directory
 if os.getcwd().split("/")[-1] == "Code":
-    os.chdir("..")
+    os.chdir("../..")
 curr_dir = os.getcwd()
 data_dir = curr_dir + "/Data/"
 

@@ -8,7 +8,7 @@ import os
 
 # Force the correct directory
 if os.getcwd().split("/")[-1] == "Code":
-    os.chdir("..")
+    os.chdir("../..")
 curr_dir = os.getcwd()
 
 # If output directory does not already exist, create one

@@ -2,97 +2,49 @@
 # Created by: jacobpichelmann
 # Created on: 06.02.21
 
-source("DistSens.R")
+source("SimFunc.R")
 
 ######################################################################
-######## Set right parameters based on distribution and delta ########
+####################### Set parameters ###############################
 ######################################################################
 
 window <-  11 # simulation window
-R_val <- c(1.6, 0.9, 1.3)
-# rep <- 60
+R_val <- c(1.6, 0.9, 1.3) # incidence R
 n_days <- 180
 delta <- 1/24
 n <- window / delta
-# tau_est <- 10 # estimation window
 
-# parameters of the different distributions
+# parameters of the simulated distribution
 sim_var <- 1.1
-sim_mu <- 6.6
+sim_mean <- 6.6
 
-# weib<-weibullparinv(1.96, 8.47, loc = 0) #values from June Young Chun, Gyuseung Baek
-a_weibull <- weib$mu
-b_weibull <- weib$sigma
+######################################################################
+############## Simulate Serial Interval Data #########################
+######################################################################
 
-a_norm <- 6.6
-b_norm <- 1.1
+samps <- samp_pois(1.4, study_len = 25, num_people = 2000, sim_mu = sim_mean, sim_sig = sim_var,
+				   'gamma', delta = 1) # check how to work with delta here
 
-a_lnorm <- 1.5
-b_lnorm <- 0.3
 
-param_a <- c(sim_mu, a_weibull, a_norm, a_lnorm)
-param_b <- c(sim_var, b_weibull, b_norm, b_lnorm)
-dist <- c("gamma", 'weibull', 'norm', 'lnorm' )
+######################################################################
+############## Estimate Serial Interval ##############################
+######################################################################
 
-mat_param<- cbind(dist, param_a, param_b)
-mat_param <- as.data.frame(mat_param)
-mat_param$param_a <-as.numeric(mat_param$param_a)
-mat_param$param_b <-as.numeric(mat_param$param_b)
+vals <- serial_ests(samps) # here we obtain the params for Rt_est
 
-est_dists <- c("gamma", 'weibull', 'norm', 'lnorm')
+######################################################################
+############## Simulate Incidence ####################################
+######################################################################
 
-dat <- nour_sim_data(sim_mu, sim_var, 'gamma', 24)
+incid <- nour_sim_data(sim_mu, sim_var, 'gamma', 24) # important! must be same dist as in samp_pois
 
-params <- serial_ests(est_mu, est_var, 10, est_dists)
+######################################################################
+##################### Estimate Rt ####################################
+######################################################################
 
-Rt_mat <- list()
-MSE_mat <- list()
+Rt <- Rt_est(incid, vals, type = 'gamma')
+MSE <- MSE_est(Rt)
 
-for (i in 1:length(est_dists)) {
-	dist <- est_dists[i]
-	dist_vals <- params[params['Distribution'] == dist, ]
-
-	mat <- Rt_est(dat, dist_vals, dist)
-	mat_MSE <- MSE_est(mat)
-
-	Rt_mat[[i]] <- mat
-	MSE_mat[[i]] <- mat_MSE
-}
-
-Rt_mat <- do.call('rbind', Rt_mat)
-MSE_mat <- do.call('rbind', MSE_mat)
-
-################################################################################
-#Plot the different estimated distributions vs. original distributions
-################################################################################
-
-og_gamma <- gen_distribution(15, sim_mu, sim_var, "gamma")
-new_gamma <- gen_distribution(15, mean(params[params$Distribution == 'gamma', 'True_a']), mean(params[params$Distribution == 'gamma', 'True_b']),"gamma")
-og_weibull <- gen_distribution(15, a_weibull, b_weibull, "weibull")
-new_weibull<- gen_distribution(15, mean(params[params$Distribution == 'weibull', 'True_a']), mean(params[params$Distribution == 'weibull', 'True_b']),"gamma")
-og_norm <- gen_distribution(15, a_norm, b_norm, "norm")
-new_norm <- gen_distribution(15, mean(params[params$Distribution == 'norm', 'True_a']), mean(params[params$Distribution == 'norm', 'True_b']),"gamma")
-og_lnorm <- gen_distribution(15, a_lnorm, b_lnorm, "lnorm")
-new_lnorm <- gen_distribution(15, mean(params[params$Distribution == 'lnorm', 'True_a']), mean(params[params$Distribution == 'lnorm', 'True_b']),"gamma")
-
-jpeg("DistCompare.jpg")
-layout(matrix(1:4, nrow = 2, ncol=2))
-plot(og_gamma, type="l")
-lines(new_gamma, type="l", col="green")
-title("Gamma")
-
-plot(og_weibull, type="l")
-lines(new_weibull, type="l", col="red")
-title("Weibull")
-
-plot(og_norm, type="l")
-lines(new_norm, type="l", col="blue")
-title("Normal")
-
-plot(og_lnorm, type="l")
-lines(new_lnorm, type="l", col="orange")
-title("Log-normal")
-dev.off()
 
 ################################################################################
 #Plot the estimated R's vs. the Simulated R

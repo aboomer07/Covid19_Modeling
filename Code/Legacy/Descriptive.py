@@ -2,7 +2,6 @@
 
 
 import os
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -12,12 +11,12 @@ import world_bank_data as wb
 import country_converter as coco
 
 
-from Code.DataFunc import *
-from Code.SIRModel import r0_dyn
+from Code.Legacy.DataFunc import *
+from Code.Legacy.SIRModel import r0_dyn
 
 # Force the correct directory
 if os.getcwd().split("/")[-1] == "Code":
-    os.chdir("..")
+    os.chdir("../..")
 curr_dir = os.getcwd()
 data_dir = curr_dir + "/Data/"
 

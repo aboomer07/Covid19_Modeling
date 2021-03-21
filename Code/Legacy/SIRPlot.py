@@ -5,11 +5,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-from Code.SIRParams import df
-
 # Force the correct directory
 if os.getcwd().split("/")[-1] == "Code":
-    os.chdir("..")
+    os.chdir("../..")
 curr_dir = os.getcwd()
 
 # If output directory does not already exist, create one

@@ -12,13 +12,13 @@ from Plots import *
 # Sort of out location of all the folders
 ################################################################################
 if os.getcwd().split("/")[-1] == 'Code':
-    data_dir = os.path.abspath("..") + "/Data"
+    data_dir = os.path.abspath("../..") + "/Data"
 
-    if not os.path.isdir(os.path.abspath("..") + '/Output'):
-        os.mkdir(os.path.abspath("..") + '/Output')
-    output_dir = os.path.abspath("..") + '/Output'
+    if not os.path.isdir(os.path.abspath("../..") + '/Output'):
+        os.mkdir(os.path.abspath("../..") + '/Output')
+    output_dir = os.path.abspath("../..") + '/Output'
 
-    report_dir = os.path.abspath("..") + '/Report'
+    report_dir = os.path.abspath("../..") + '/Report'
 
 ################################################################################
 # Define the set of datasets to pull into dictionary from DataPrep script

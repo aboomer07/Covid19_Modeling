@@ -1,8 +1,8 @@
 # execute basic SIR model
 
-from Code.SIRModel import *
-from Code.SIRParams import *
-from Code.SIRPlot import *
+from Code.Legacy.SIRModel import *
+from Code.Legacy.SIRParams import *
+from Code.Legacy.SIRPlot import *
 
 country_list = df['Country/Region'].unique()
 
