@@ -46,30 +46,6 @@ gen_params <- function(mean, variance, type, delta) {
 
 }
 
-gen_mean_var <- function(a, b, type) {
-  if (type == 'norm') {
-    return(c(a, b))
-  }
-
-  if (type == 'lnorm') {
-    a <- log(mean^2 / (sqrt(mean^2 + variance))) + log(delta)
-    b <- log(1 + variance / mean^2)
-    return(c(a, b))
-  }
-
-  if (type == 'gamma') {
-    a <- mean^2 / variance
-    b <- (mean / variance) / delta
-    return(c(a, b))
-  }
-
-  if (type == 'weibull') {
-    a <- as.numeric(weibullpar(mean, variance)[1])
-    b <- as.numeric(weibullpar(mean, variance)[2]) * delta
-    return(c(a, b))
-  }
-}
-
 gen_distribution <- function(k, mean, var, type, delta) {
   k <- 1:(k * delta)
 
@@ -243,6 +219,7 @@ Rt_est <- function(df, vals, type) {
     else {
       a <- data[i,]$est_a
       b <- data[i,]$est_b
+      mean <- a*b
       t <- data[i,]$Date
 
       dist <- rev(gen_distribution(t - 1, a, b, type, 1))
