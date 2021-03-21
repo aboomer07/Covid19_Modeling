@@ -2,12 +2,20 @@
 # Created by: jacobpichelmann
 # Created on: 21.03.21
 
-source('SimFunc.R')
+source(paste0(getwd(), "/Code/SimFunc.R"))
 
 
 ### Specify true distributions
 
 ### Simulate serial interval
+samp_pois_plot <- function(samps, study_len){
+  data.frame(table(samps)) %>%
+    mutate(samps = as.numeric(as.character(samps))) %>%
+    ggplot(aes(x=samps, y=Freq)) + geom_bar(stat = "identity") + xlab("days") + ylab("count") +
+      scale_x_continuous(limits = c(0,study_len)) + theme_minimal()
+}
+
+samp_pois_plot(samps = samps, study_len = study_len)
 
 ### Fit gamma
 

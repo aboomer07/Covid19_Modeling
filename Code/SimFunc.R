@@ -110,7 +110,7 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
 
     #Add up all the random poisson infections
     for (sim in 1:sims) {
-      samples <- c(samples, rep(t, rpois(1, data[t,]$Lambda)))
+      samples <- c(samples, replicate(t, rpois(1, data[t,]$Lambda)))
     }
   }
   return(samples)
