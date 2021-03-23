@@ -18,77 +18,113 @@ outpath <- paste0(getwd(), '/Output/')
 ############ Generate 'true' distribution #####################
 ###############################################################
 
-gen_params <- function(mean, variance, type, delta) {
+gen_distribution <- function(k, mean, variance, type, delta) {
+
+  k <- 1:(k*delta)
 
   if (type == 'norm') {
     a <- mean * delta
     b <- variance * delta
-    return(c(a, b))
+    print(c(a, b))
+    omega <- dnorm(k, a, b)
   }
 
   if (type == 'lnorm') {
     a <- log(mean^2 / (sqrt(mean^2 + variance))) + log(delta)
     b <- log(1 + variance / mean^2)
-    return(c(a, b))
+    print(c(a, b))
+    omega <- dlnorm(k, a,b)
   }
 
   if (type == 'gamma') {
     a <- mean^2 / variance
     b <- (mean / variance) / delta
-    return(c(a, b))
+    print(c(a, b))
+    omega <- dgamma(k, a, b)    
   }
 
   if (type == 'weibull') {
     a <- as.numeric(weibullpar(mean, variance)[1])
     b <- as.numeric(weibullpar(mean, variance)[2]) * delta
-    return(c(a, b))
-  }
-
-}
-
-gen_distribution <- function(k, mean, var, type, delta) {
-  k <- 1:(k * delta)
-
-  params <- gen_params(mean, var, type, delta)
-  a <- params[1]
-  b <- params[2]
-
-  if (type == 'gamma') {
-    # cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, rate = b)
-
-    # omega <- k * cdf_gamma(k, a, b) +
-    #   (k - 2) * cdf_gamma(k - 2, a, b) - 2 * (k - 1) * cdf_gamma(k - 1, a, b)
-    # omega <- omega + a * b *
-    #   (2 * cdf_gamma(k - 1, a + 1, b) -
-    #     cdf_gamma(k - 2, a + 1, b) -
-    #     cdf_gamma(k, a + 1, b))
-    # omega <- sapply(omega, function(e) max(0, e))
-
-    omega <- dgamma(k, shape=a, rate=b)
-
-    return(omega)
-  }
-
-  if (type == 'weibull') {
+    print(c(a, b))
     omega <- dweibull(k, a, b)
-    return(omega)
   }
 
-  if (type == 'norm') {
-    omega <- dnorm(k, a, b)
-    return(omega)
+  if (type == 'chisq') {
+    a <- mean
+    b <- 2*mean
+    print(c(a, b))
+    omega <- dchisq(k, a)
   }
 
-  if (type == 'lnorm') {
-    omega <- dlnorm(k, a, b)
-    return(omega)
-  }
+  plot(omega, type = "l")
+  return(omega)
 
 }
+
+#gen_distribution <- function(k, mean, var, type, delta) {
+#  k <- 1:(k * delta)
+#
+#  params <- gen_params(mean, var, type, delta)
+#  a <- params[1]
+#  b <- params[2]
+#
+#  if (type == 'gamma') {
+#    # cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, rate = b)
+#
+#    # omega <- k * cdf_gamma(k, a, b) +
+#    #   (k - 2) * cdf_gamma(k - 2, a, b) - 2 * (k - 1) * cdf_gamma(k - 1, a, b)
+#    # omega <- omega + a * b *
+#    #   (2 * cdf_gamma(k - 1, a + 1, b) -
+#    #     cdf_gamma(k - 2, a + 1, b) -
+#    #     cdf_gamma(k, a + 1, b))
+#    # omega <- sapply(omega, function(e) max(0, e))
+#
+#    omega <- dgamma(k, shape=a, rate=b)
+#
+#    return(omega)
+#  }
+#
+#  if (type == 'weibull') {
+#    omega <- dweibull(k, a, b)
+#    return(omega)
+#  }
+#
+#  if (type == 'norm') {
+#    omega <- dnorm(k, a, b)
+#    return(omega)
+#  }
+#
+#  if (type == 'lnorm') {
+#    omega <- dlnorm(k, a, b)
+#    return(omega)
+#  }
+#
+#}
 
 ###############################################################
 ########### Simulate Serial Interval Data #####################
 ###############################################################
+
+#samp_pois = function(R_val, study_len, mean, variance, type, delta, sims) { 
+#  
+#  Rt = rep(R_val, (study_len*delta))
+#  lambda = matrix(, nrow = sims, ncol = study_len*delta)
+#  secondary = matrix(, nrow = sims, ncol = study_len*delta)
+#  omega = gen_distribution(study_len, mean, variance, type, delta)
+#
+#  for (s in 1:sims){
+#    for (t in 1:(study_len*delta)){
+#      lambda[s,t] = Rt[t]*omega[t]
+#      secondary[s,t] = rpois(1, lambda[s,t])
+#    }
+#  }
+#
+#  SecSum = colSums(secondary)
+#  return(SecSum)
+#}
+
+
 samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, delta) {
 
   data <- data.frame(rep(R_val, (study_len / length(R_val))))
@@ -97,7 +133,7 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
   data$sim_sig <- rep(sim_sig, study_len)
   data$Lambda <- rep(0, study_len)
 
-  sims <- num_people
+  sims <- num_people  
   samples <- c()
 
   range <- 1:nrow(data)
