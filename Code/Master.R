@@ -11,7 +11,7 @@ source(paste0(getwd(), "/Code/SimFunc.R"))
 window <-  11 # simulation window
 R_val <- c(1.6, 0.9, 1.3) # incidence R
 n_days <- 180
-delta <- 1/24
+delta <- 24
 n <- window / delta
 
 # parameters of the simulated distribution
