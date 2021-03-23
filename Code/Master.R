@@ -23,14 +23,15 @@ num_people <- 2000
 ######################################################################
 ############## Simulate Serial Interval Data #########################
 ######################################################################
-
-samps <- samp_pois(R_val = 1.4, study_len = study_len, num_people = num_people,
-				   sim_mu = sim_mean, sim_sig = sim_var, sim_type ='gamma', delta = 1) # check how to work with delta here
+set.seed(14152118)
+system.time({samps <- samp_pois(R_val = 1.4, study_len = study_len, num_people = num_people,
+				   sim_mu = sim_mean, sim_sig = sim_var, sim_type ='gamma', delta = delta)}) # check how to work with delta here
 
 ######################################################################
 ############## Estimate Serial Interval ##############################
 ######################################################################
 
+## TODO: ????
 vals <- serial_ests(samps) # here we obtain the params for Rt_est
 
 ######################################################################

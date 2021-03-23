@@ -15,7 +15,7 @@ samp_pois_plot <- function(samps, study_len){
       scale_x_continuous(limits = c(0,study_len)) + theme_minimal()
 }
 
-samp_pois_plot(samps = samps, study_len = study_len)
+samp_pois_plot(samps = samps, study_len = study_len*delta)
 
 ### Fit gamma
 
