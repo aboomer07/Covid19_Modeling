@@ -127,21 +127,22 @@ gen_distribution <- function(k, mean, variance, type, delta) {
 
 samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, delta) {
 
-  data <- data.frame(rep(R_val, (study_len / length(R_val))))
+  data <- data.frame(rep(R_val, each = (study_len*delta / length(R_val))))
   names(data) <- "Rt"
-  data$sim_mu <- rep(sim_mu, study_len)
-  data$sim_sig <- rep(sim_sig, study_len)
-  data$Lambda <- rep(0, study_len)
+  data$sim_mu <- rep(sim_mu, study_len*delta)
+  data$sim_sig <- rep(sim_sig, study_len*delta)
+  data$Lambda <- rep(0, study_len*delta)
 
-  sims <- num_people  
+  sims <- num_people
   samples <- c()
 
   range <- 1:nrow(data)
 
-  #Generate Mean Incidence based on gamma prior
+  #Generate Distribution for serial interval
+  dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, delta)
   for (t in range) {
 
-    dist <- gen_distribution(t, sim_mu, sim_sig, sim_type, delta)
+    # get mean infectivity for respective day of study
     data[t,]$Lambda <- data[t,]$Rt * dist[t]
 
     #Add up all the random poisson infections
@@ -161,7 +162,7 @@ serial_ests <- function(samps) {
   params <- list()
 
   #fit  distribution with a gamma
-  fit <- fitdist(samps, "gamma")
+  fit <- fitdist(samps, "gamma")  # TODO: Is estimate normally distribute?
 
   a_est <- fit$estimate[1]
   b_est <- fit$estimate[2]
