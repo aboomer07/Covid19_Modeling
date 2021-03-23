@@ -129,8 +129,6 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
 
   data <- data.frame(rep(R_val, each = (study_len*delta / length(R_val))))
   names(data) <- "Rt"
-  data$sim_mu <- rep(sim_mu, study_len*delta)
-  data$sim_sig <- rep(sim_sig, study_len*delta)
   data$Lambda <- rep(0, study_len*delta)
 
   sims <- num_people
@@ -150,7 +148,19 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
       samples <- c(samples, rep(t, rpois(1, data[t,]$Lambda)))
     }
   }
-  return(samples)
+
+#Make infections daily
+  daily <- c()
+  day <- seq(1, study_len*delta, delta)
+  
+  for (d in 1:length(day)) {
+    for (i in 1:length(samples)) { 
+      if (samples[i] >= day[d] & samples[i] < day[d+1]) {
+        daily <- c(daily, rep(d, 1))
+      }
+    }
+  }
+  return(daily)
 }
 
 
