@@ -15,23 +15,27 @@ delta <- 24
 n <- window / delta
 
 # parameters of the simulated distribution
-sim_var <- 1.1
-sim_mean <- 6.6
-study_len <- 25
-num_people <- 2000
+sim_mean <- 7
+sim_var <- 2
+study_len <- 20
+num_people <- 500
+set.seed(14152118) #It spells Nour in numbers hihihi
 
 ######################################################################
 ############## Simulate Serial Interval Data #########################
 ######################################################################
 
 samps <- samp_pois(R_val = 1.4, study_len = study_len, num_people = num_people,
-				   sim_mu = sim_mean, sim_sig = sim_var, sim_type ='gamma', delta = 1) # check how to work with delta here
+				   sim_mu = sim_mean, sim_sig = sim_var, sim_type ='gamma', delta) # check how to work with delta here
 
 ######################################################################
 ############## Estimate Serial Interval ##############################
 ######################################################################
 
 vals <- serial_ests(samps) # here we obtain the params for Rt_est
+vals
+
+#estimates are sensitive to num_people, as should be! 
 
 ######################################################################
 ############## Simulate Incidence ####################################

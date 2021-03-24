@@ -4,11 +4,8 @@
 
 source(paste0(getwd(), "/Code/SimFunc.R"))
 
-
-### Specify true distributions
-
-### Simulate serial interval
-samp_pois_plot <- function(samps, study_len){
+### Simulate serial interval 
+samp_pois_plot <- function(samps, study_len){ 
   data.frame(table(samps)) %>%
     mutate(samps = as.numeric(as.character(samps))) %>%
     ggplot(aes(x=samps, y=Freq)) + geom_bar(stat = "identity") + xlab("days") + ylab("count") +
@@ -17,7 +14,16 @@ samp_pois_plot <- function(samps, study_len){
 
 samp_pois_plot(samps = samps, study_len = study_len*delta)
 
-### Fit gamma
+### Fit gamma and compare it to true distribution -daily
+
+dist_estimate <- function(study_len, sim_mean, sim_var, sim_type, vals){
+	omegadaily <- gen_distribution(study_len, sim_mean, sim_var, sim_type, 1) 
+	plot(omegadaily, type = "l", main = "Distribution of true generation time vs its estimate", xlab = "Time", ylab = "Density")
+	lines(dgamma(1:study_len, vals$shape, vals$rate), col = "red")
+}
+
+dist_estimate(study_len, sim_mean, sim_var, "weibull", vals)
+
 
 ### Evaluate
 
