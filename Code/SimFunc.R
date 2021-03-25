@@ -11,8 +11,7 @@ library(np)
 library(KernSmooth)
 library(mixdist)
 
-imppath <- paste0(getwd(), '/Data/')
-outpath <- paste0(getwd(), '/Output/')
+
 
 ###############################################################
 ############ Generate 'true' distribution #####################
@@ -25,34 +24,32 @@ gen_distribution <- function(k, mean, variance, type, delta) {
   if (type == 'norm') {
     a <- mean * delta
     b <- variance * delta
-    print(c(a, b))
+    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dnorm(k, a, b)
   }
 
   if (type == 'lnorm') {
     a <- log(mean^2 / (sqrt(mean^2 + variance))) + log(delta)
     b <- log(1 + variance / mean^2)
-    print(c(a, b))
+    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dlnorm(k, a,b)
   }
 
   if (type == 'gamma') {
     a <- mean^2 / variance
     b <- (mean / variance) / delta
-    print(c(a, b))
+    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dgamma(k, a, b)    
   }
 
   if (type == 'weibull') {
     a <- as.numeric(weibullpar(mean, variance)[1])
     b <- as.numeric(weibullpar(mean, variance)[2]) * delta
-    print(c(a, b))
+    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dweibull(k, a, b)
   }
 
-  plot(omega, type = "l")
-  return(omega)
-
+ return(omega)
 }
 
 
@@ -67,11 +64,11 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
   data$Lambda <- rep(0, study_len*delta)
 
   sims <- num_people
-  samples <- c()
+  samplescont <- c()
 
   range <- 1:nrow(data)
 
-  #Generate Distribution for serial interval
+  # Generate Distribution for serial interval
   dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, delta)
   for (t in range) {
 
@@ -80,22 +77,25 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
 
     #Add up all the random poisson infections
     for (sim in 1:sims) {
-      samples <- c(samples, rep(t, rpois(1, data[t,]$Lambda)))
+      samplescont <- c(samplescont, rep(t, rpois(1, data[t,]$Lambda)))
     }
   }
 
-  #Make infections daily
+  # Make infections daily
   daily <- c()
   day <- seq(1, study_len*delta, delta)
   
   for (d in 1:length(day)) {
-    for (i in 1:length(samples)) { 
-      if ((samples[i] >= day[d]) & (samples[i] < day[d+1])) {
+    for (i in 1:length(samplescont)) {
+      if ((samplescont[i] >= day[d]) & (samplescont[i] < day[d+1])) {
         daily <- c(daily, d)
       }
     }
   }
-  return(daily)
+
+  # Get output that includes true distribution and simulated secondary cases
+  serinfect <- list(samplescont = samplescont, daily = daily, dist = dist)
+  return(serinfect)
 }
 
 
@@ -107,13 +107,13 @@ serial_ests <- function(samps) {
   params <- list()
 
   #fit  distribution with a gamma
-  fit <- fitdist(samps, "gamma")  # TODO: Is estimate normally distribute?
+  fit <- fitdist(samps, "gamma")
 
   a_est <- as.numeric(fit$estimate[1])
   b_est <- as.numeric(fit$estimate[2])
 
-  a_sd <- as.numeric(fit$sd[1])
-  b_sd <- as.numeric(fit$sd[2])
+  # a_sd <- as.numeric(fit$sd[1])
+  # b_sd <- as.numeric(fit$sd[2])
   
   #Transform parameters into mean and variance
   a_norm <- as.numeric(a_est/b_est)
