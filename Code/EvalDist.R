@@ -38,13 +38,24 @@ serial_hist_disc <- function (samps){
 ######################################################################
 
 serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals){
-	omegadaily <- gen_distribution(study_len, sim_mean, sim_var, sim_type, 1)
-	plot(omegadaily, type = "l", main = NULL, xlab = "Day", ylab = "Density", lwd=2)
-	lines(dgamma(1:study_len, vals$shape, vals$rate), col = "red", lwd=2)
+	true <- gen_distribution(study_len, sim_mean, sim_var, sim_type, 1)
+	est <- dgamma(1:study_len, vals$shape, vals$rate)
+	
+	plot(true, type = "l", main = NULL, xlab = "Day", ylab = "Density", lwd=2)
+	lines(est, col = "red", lwd=2)
+	
+	df_t<-as.data.frame(true)
+	df_e<-as.data.frame(est)
+	df<-bind_cols(df_t, df_e)
+	MSE<-MSE_est2(df)
+	
 	legend("topright",
 		   legend = c(paste0("True Serial Interval (", sim_type,")"),
 					  paste0("Estimated Serial Interval (gamma)")),
 		   col = c("black", "red"), lty=1, cex=0.9)
+	
+	legend("right", legend=c(paste0("MSE: ", MSE)), pt.cex = 0,pch = c(17,19), cex=0.8)
+	
 }
 
 

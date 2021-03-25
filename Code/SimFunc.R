@@ -256,3 +256,12 @@ MSE_est <- function(df) {
 
   return(df)
 }
+
+
+MSE_est2 <- function(df) {
+  
+  df$SSE <- (df$true - df$est)^2
+  MSE<-mean(df$SSE)
+  
+  return(MSE)
+}
