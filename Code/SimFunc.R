@@ -226,7 +226,7 @@ Rt_est <- function(df, vals, type) {
   return(data)
 }
 
-Rt_est_nonpara <- function(df, samps) {
+Rt_est_nonpara <- function(df, samps, bw) {
   start <- 10
   data <- data.frame(matrix(nrow = n_days, ncol = 3))
   names(data) <- c('Date', 'Rt', 'Est_Rt')
@@ -241,7 +241,7 @@ Rt_est_nonpara <- function(df, samps) {
     else {
       t <- data[i,]$Date
 
-      dist <- rev(serial_ests_nonpara(samps, range = c(1, (t - 1)))$y)
+      dist <- rev(serial_ests_nonpara(samps, range = c(1, (t - 1)), bandwidth = bw)$y)
       I <- df[which(df$days == t),]$infective_day
       I_window <- df[df$days %in% 1:(t - 1),]$infective_day
       data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
