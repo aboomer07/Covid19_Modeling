@@ -24,7 +24,7 @@ n <- window*delta
 sim_mean <- 7
 sim_var <- 2
 study_len <- 20
-num_people <- 500
+num_people <- 100
 sim_type <- "weibull"
 set.seed(14152118) #It spells Nour in numbers hihihi
 
@@ -67,23 +67,29 @@ pdf(file = paste0(outpath, "SerialEst_", sim_type, ".pdf"))
 serial_est_plot(study_len, sim_mean, sim_var, sim_type, vals)
 dev.off()
 
-# plot estimate non parametric h = nsr
-pdf(file = paste0(outpath, "SerialEst_Weibull_NonParaNSR.pdf"))
-serial_est_plot_full(study_len, sim_mean, sim_var, sim_type, R_val = 1.6, nonpara = T, bw = 'nsr')
+### plots for meeting 26.03.2021 ###
+
+# 1. underlying: gamma, est: gamma
+png(file = paste0(outpath, "SerialEst_Gamma.png"))
+serial_est_plot_full(study_len, sim_mean = 6.6, sim_var = 1.1, sim_type = 'gamma', R_val = 1.6)
 dev.off()
 
-pdf(file = paste0(outpath, "SerialEst_Normal_NonParaNSR.pdf"))
-serial_est_plot_full(study_len, sim_mean, sim_var, sim_type = 'norm', R_val = 1.6, nonpara = T, bw = 'nsr')
+# 2. underlying: weibull, est: gamma
+png(file = paste0(outpath, "SerialEst_Weibull.png"))
+serial_est_plot_full(study_len, sim_mean, sim_var, sim_type, R_val = 1.6, nonpara = F)
 dev.off()
 
-# plot estimate non parametric h = interquartile
-pdf(file = paste0(outpath, "SerialEst_Weibull_NonParaIQR.pdf"))
-serial_est_plot_full(study_len, sim_mean, sim_var, sim_type, R_val = 1.6, nonpara = T, bw = 'interquartile')
+# 3. underlying: gamma, est: non para, IQR
+png(file = paste0(outpath, "SerialEst_Gamma_IQR.png"))
+serial_est_plot_full(study_len, sim_mean = 6.6, sim_var = 1.1, sim_type = 'gamma', R_val = 1.6, nonpara = T, bw = 'iqr')
 dev.off()
 
-pdf(file = paste0(outpath, "SerialEst_Normal_NonParaIQR.pdf"))
-serial_est_plot_full(study_len, sim_mean, sim_var, sim_type = 'norm', R_val = 1.6, nonpara = T, bw = 'interquartile')
+# 4. underlying: weibull, est: non para, IQR
+png(file = paste0(outpath, "SerialEst_Weibull_IQR.png"))
+serial_est_plot_full(study_len, sim_mean, sim_var, sim_type, R_val = 1.6, nonpara = T, bw = 'iqr')
 dev.off()
+
+
 
 ######################################################################
 ############## Simulate Incidence ####################################

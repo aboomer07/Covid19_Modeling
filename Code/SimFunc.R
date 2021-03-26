@@ -17,6 +17,9 @@ library(mixdist)
 ############ Generate 'true' distribution #####################
 ###############################################################
 
+# helper function for gamma dist
+cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, rate = b)
+
 gen_distribution <- function(k, mean, variance, type, delta) {
 
   k <- 1:(k*delta)
@@ -38,8 +41,12 @@ gen_distribution <- function(k, mean, variance, type, delta) {
   if (type == 'gamma') {
     a <- mean^2 / variance
     b <- (mean / variance) / delta
+    # b <- 1/b
     print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    omega <- dgamma(k, a, b)    
+    #omega <- k * cdf_gamma(k, a, b) + (k - 2) * cdf_gamma(k - 2, a, b) - 2 * (k - 1) * cdf_gamma(k - 1, a, b)
+    #omega <- omega + a * b * (2 * cdf_gamma(k - 1, a + 1, b) - cdf_gamma(k - 2, a + 1, b) - cdf_gamma(k, a + 1, b))
+    #omega <- sapply(omega, function(e) max(0, e))
+    omega <- dgamma(k, a, b)
   }
 
   if (type == 'weibull') {
@@ -150,7 +157,7 @@ serial_ests_nonpara <- function(samps, range, bandwidth) {
   if (bandwidth == 'nsr'){
     h <- 1.059 * sd(samps) * length(samps)^(-1 / 5)
   }
-  if (bandwidth == 'interquartile'){
+  if (bandwidth == 'iqr'){
     h <- 0.9 * length(samps)^(-1 / 5) * (IQR(samps)/1.34)
   }
   kernel_est <- bkde(samps, bandwidth = h, range.x = range, gridsize = max(range))
