@@ -115,7 +115,7 @@ serial_est_plot_full <- function(study_len, sim_mean, sim_var, sim_type, R_val, 
 	if (nonpara){
 	legend("topright",
 		   legend = c(paste0("True Serial Interval (", sim_type,")"),
-					  paste0("Estimated Serial Interval (Kernel Estimation)")),
+					  paste0("Estimated Serial Interval (Bandwidth: ", bw, ")")),
 		   col = c("black", "red"), lty=1, cex=0.9)
 	}
 
