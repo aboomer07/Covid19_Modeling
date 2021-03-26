@@ -37,26 +37,92 @@ serial_hist_disc <- function (samps){
 ############## Serial Interval Estimation Plot  ######################
 ######################################################################
 
-serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals){
+serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpara = F){
 	true <- gen_distribution(study_len, sim_mean, sim_var, sim_type, 1)
-	est <- dgamma(1:study_len, vals$shape, vals$rate)
+
+	if (!nonpara){
+		est <- dgamma(1:study_len, vals$shape, vals$rate)
+		df_e <- as.data.frame(est)
+
+	}
+
+	if (nonpara){
+		est <- vals # here vals has to b already fitted data obtained from serial_est_nonpara()
+		df_e <- as.data.frame(est$y)
+	}
 	
 	plot(true, type = "l", main = NULL, xlab = "Day", ylab = "Density", lwd=2)
 	lines(est, col = "red", lwd=2)
-	
+
 	df_t<-as.data.frame(true)
-	df_e<-as.data.frame(est)
 	df<-bind_cols(df_t, df_e)
 	MSE<-MSE_est2(df)
-	
+
+	if (!nonpara){
 	legend("topright",
 		   legend = c(paste0("True Serial Interval (", sim_type,")"),
 					  paste0("Estimated Serial Interval (gamma)")),
 		   col = c("black", "red"), lty=1, cex=0.9)
+	}
+
+	if (nonpara){
+	legend("topright",
+		   legend = c(paste0("True Serial Interval (", sim_type,")"),
+					  paste0("Estimated Serial Interval (Kernel Estimation)")),
+		   col = c("black", "red"), lty=1, cex=0.9)
+	}
 	
 	legend("right", legend=c(paste0("MSE: ", MSE)), pt.cex = 0,pch = c(17,19), cex=0.8)
 	
 }
+
+# second function that does all at once so there is no confusion between samps creation and simulation parameters for
+# true dist
+
+serial_est_plot_full <- function(study_len, sim_mean, sim_var, sim_type, R_val, nonpara = F, bw = NULL){
+	true <- gen_distribution(study_len, sim_mean, sim_var, sim_type, 1)
+
+	samps <- samp_pois(R_val = 1.6, study_len = study_len,
+					   num_people = num_people, sim_mu = sim_mean,
+					   sim_sig = sim_var, sim_type = sim_type, delta = delta)$daily
+
+	if (!nonpara){
+		vals <- serial_ests(samps)
+		est <- dgamma(1:study_len, vals$shape, vals$rate)
+		df_e <- as.data.frame(est)
+
+	}
+
+	if (nonpara){
+		est <- serial_ests_nonpara(samps, range = c(0, study_len), bandwidth = bw) # here vals has to b already fitted data obtained from serial_est_nonpara()
+		df_e <- as.data.frame(est$y)
+	}
+
+	plot(true, type = "l", main = NULL, xlab = "Day", ylab = "Density", lwd=2)
+	lines(est, col = "red", lwd=2)
+
+	df_t<-as.data.frame(true)
+	df<-bind_cols(df_t, df_e)
+	MSE<-MSE_est2(df)
+
+	if (!nonpara){
+	legend("topright",
+		   legend = c(paste0("True Serial Interval (", sim_type,")"),
+					  paste0("Estimated Serial Interval (gamma)")),
+		   col = c("black", "red"), lty=1, cex=0.9)
+	}
+
+	if (nonpara){
+	legend("topright",
+		   legend = c(paste0("True Serial Interval (", sim_type,")"),
+					  paste0("Estimated Serial Interval (Kernel Estimation)")),
+		   col = c("black", "red"), lty=1, cex=0.9)
+	}
+
+	legend("right", legend=c(paste0("MSE: ", MSE)), pt.cex = 0,pch = c(17,19), cex=0.8)
+
+}
+
 
 
 ######################################################################

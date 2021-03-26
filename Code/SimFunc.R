@@ -146,9 +146,14 @@ serial_ests <- function(samps) {
   return(vals)
 }
 
-serial_ests_nonpara <- function(samps, correction, range) {
-  h_nsr <- 1.059 * sd(samps) * length(samps)^(-1 / 5)
-  kernel_est <- bkde(samps, bandwidth = h_nsr + correction, range.x = range, gridsize = max(range))
+serial_ests_nonpara <- function(samps, range, bandwidth) {
+  if (bandwidth == 'nsr'){
+    h <- 1.059 * sd(samps) * length(samps)^(-1 / 5)
+  }
+  if (bandwidth == 'interquartile'){
+    h <- 0.9 * length(samps)^(-1 / 5) * (IQR(samps)/1.34)
+  }
+  kernel_est <- bkde(samps, bandwidth = h, range.x = range, gridsize = max(range))
 }
 
 ###############################################################
@@ -221,24 +226,22 @@ Rt_est <- function(df, vals, type) {
   return(data)
 }
 
-Rt_est_nonpara <- function(df, samps, corrections) {
+Rt_est_nonpara <- function(df, samps) {
   start <- 10
-  data <- data.frame(matrix(nrow = n_days * length(corrections), ncol = 4))
-  names(data) <- c('Date', 'Cor_Par', 'Rt', 'Est_Rt')
+  data <- data.frame(matrix(nrow = n_days, ncol = 3))
+  names(data) <- c('Date', 'Rt', 'Est_Rt')
 
-  data$Date <- rep(1:n_days, length(corrections))
-  data$Cor_Par <- rep(corrections, each = n_days) # instead of distribution parameters we can correct/opt bandwidth
-  data$Rt <- rep(df['R_val'][[1]], length(corrections))
+  data$Date <- rep(1:n_days)
+  data$Rt <- rep(df['R_val'][[1]])
 
   for (i in start:nrow(data)) {
     if (data[i,]$Date <= start) {
       data[i,]$Est_Rt <- NA
     }
     else {
-      correction <- data[i,]$Cor_Par
       t <- data[i,]$Date
 
-      dist <- rev(serial_ests_nonpara(samps, correction, range = c(1, (t - 1)))$y)
+      dist <- rev(serial_ests_nonpara(samps, range = c(1, (t - 1)))$y)
       I <- df[which(df$days == t),]$infective_day
       I_window <- df[df$days %in% 1:(t - 1),]$infective_day
       data[i,]$Est_Rt <- (I) / (sum(I_window * dist))

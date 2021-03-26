@@ -3,7 +3,7 @@
 # Created on: 06.02.21
 
 imppath <- paste0(getwd(), '/Code/Data/')
-outpath <- paste0(getwd(), '/Code/Output/')
+outpath <- paste0(getwd(), '/Output/')
 
 source(paste0(getwd(), "/Code/SimFunc.R"))
 source(paste0(getwd(), "/Code/EvalDist.R"))
@@ -28,8 +28,8 @@ num_people <- 500
 sim_type <- "weibull"
 set.seed(14152118) #It spells Nour in numbers hihihi
 
-sim_mu = sim_mean
-sim_sig= sim_var
+sim_mu <- sim_mean
+sim_sig <- sim_var
 
 ######################################################################
 ############## Simulate Serial Interval Data #########################
@@ -65,6 +65,24 @@ vals <- serial_ests(samps) # here we obtain the params for Rt_est
 # plot estimate
 pdf(file = paste0(outpath, "SerialEst_", sim_type, ".pdf"))
 serial_est_plot(study_len, sim_mean, sim_var, sim_type, vals)
+dev.off()
+
+# plot estimate non parametric h = nsr
+pdf(file = paste0(outpath, "SerialEst_Weibull_NonParaNSR.pdf"))
+serial_est_plot_full(study_len, sim_mean, sim_var, sim_type, R_val = 1.6, nonpara = T, bw = 'nsr')
+dev.off()
+
+pdf(file = paste0(outpath, "SerialEst_Normal_NonParaNSR.pdf"))
+serial_est_plot_full(study_len, sim_mean, sim_var, sim_type = 'norm', R_val = 1.6, nonpara = T, bw = 'nsr')
+dev.off()
+
+# plot estimate non parametric h = interquartile
+pdf(file = paste0(outpath, "SerialEst_Weibull_NonParaIQR.pdf"))
+serial_est_plot_full(study_len, sim_mean, sim_var, sim_type, R_val = 1.6, nonpara = T, bw = 'interquartile')
+dev.off()
+
+pdf(file = paste0(outpath, "SerialEst_Normal_NonParaIQR.pdf"))
+serial_est_plot_full(study_len, sim_mean, sim_var, sim_type = 'norm', R_val = 1.6, nonpara = T, bw = 'interquartile')
 dev.off()
 
 ######################################################################
