@@ -166,13 +166,14 @@ serial_ests_nonpara <- function(samps, range, bandwidth) {
 ###############################################################
 ################ Simulate Incidence Data ######################
 ###############################################################
-nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m = window, R = R_val, N = n) {
+nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m = window, R = R_val) {
 
   data <- data.frame(matrix(nrow = days * delta, ncol = 4))
   colnames(data) <- c('t', 'days', 'R_t', 'infective')
   data$t <- 1:dim(data)[1]
   data$days <- rep(1:days, each = delta)
-  data$infective[1:(tau_m * delta)] <- round(seq(10, 100, length.out = tau_m * delta))
+  data$infected <- NA
+  data$infected[1:(tau_m * delta)] <- round(seq(10, 100, length.out = tau_m * delta))
   data$R_t <- rep(R, each = (delta * days / length(R)))
 
   dist <- rev(gen_distribution(tau_m, sim_mu, sim_var, sim_type, delta))
@@ -181,18 +182,18 @@ nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m
   start <- ((tau_m) * delta) + 1
 
   for (t in start:dim(data)[1]) {
-    I_vec <- data[data$t %in% (t - N):(t - 1),]$infective
+    I_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$infected
     R_mean <- mean(data[which(data$t == t),]$R_t)
     total_infec <- sum(I_vec * dist)
 
     infec <- R_mean * total_infec
-    data[which(data$t == t),]$infective <- infec
+    data[which(data$t == t),]$infected <- infec
   }
 
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
-    summarise(infective_day = round(mean(infective)), R_val = mean(R_t))
+    summarise(infected_day = round(mean(infected)), R_val = mean(R_t))
 
   return(daily_infec)
 }
@@ -224,8 +225,8 @@ Rt_est <- function(df, vals, type) {
       t <- data[i,]$Date
 
       dist <- rev(gen_distribution(t - 1, mean, var, type, 1))
-      I <- df[which(df$days == t),]$infective_day
-      I_window <- df[df$days %in% 1:(t - 1),]$infective_day
+      I <- df[which(df$days == t),]$infected_day
+      I_window <- df[df$days %in% 1:(t - 1),]$infected_day
       data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
     }
   }
@@ -249,8 +250,8 @@ Rt_est_nonpara <- function(df, samps, bw) {
       t <- data[i,]$Date
 
       dist <- rev(serial_ests_nonpara(samps, range = c(1, (t - 1)), bandwidth = bw)$y)
-      I <- df[which(df$days == t),]$infective_day
-      I_window <- df[df$days %in% 1:(t - 1),]$infective_day
+      I <- df[which(df$days == t),]$infected_day
+      I_window <- df[df$days %in% 1:(t - 1),]$infected_day
       data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
     }
   }
