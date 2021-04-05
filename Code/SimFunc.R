@@ -1,8 +1,6 @@
 # import libraries
 library(EpiEstim)
 library(R0)
-library(dplyr)
-library(ggplot2)
 library(tidyverse)
 library(fitdistrplus)
 library(RColorBrewer)
@@ -66,9 +64,9 @@ gen_distribution <- function(k, mean, variance, type, delta) {
 
 samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, delta) {
 
-  dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, delta)
-  print(length(dist))
-  Lambda <- R_val * dist
+  omega <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, delta)
+  print(length(omega))
+  Lambda <- R_val * omega
   print(length(Lambda))
 
   sims <- num_people
@@ -104,7 +102,7 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
   }
 
   # Get output that includes true distribution and simulated secondary cases
-  serinfect <- list(samplescont = samplescont, daily = daily, dist = dist)
+  serinfect <- list(samplescont = samplescont, daily = daily, omega = omega)
   return(serinfect)
 }
 
@@ -121,34 +119,8 @@ serial_ests <- function(samps) {
   a_est <- as.numeric(fit$estimate[1])
   b_est <- as.numeric(fit$estimate[2])
 
-  # a_sd <- as.numeric(fit$sd[1])
-  # b_sd <- as.numeric(fit$sd[2])
-  
-  #Transform parameters into mean and variance
   a_norm <- as.numeric(a_est/b_est)
   b_norm <- as.numeric(a_est/(b_est^2))
-  
-  # mean <- a_est / b_est
-  # var <- a_est * (b_est^2)
-  # mean <- mean - 1
-  # b_est <- mean / sqrt(var)
-  # a_est <- mean / b_est
-
-  #lower_a <- a_est - (1.96 * a_sd)
-  #upper_a <- a_est + (1.96 * a_sd)
-
-  #lower_b <- b_est - (1.96 * b_sd)
-  #upper_b <- b_est + (1.96 * b_sd)
-
-  #vals <- expand.grid(seq(lower_a, upper_a, ((upper_a - lower_a) / num_vars)),
-  #seq(lower_b, upper_b, ((upper_b - lower_b) / num_vars)))
-
-  #names(vals) <- c("Param_a", 'Param_b')
-  #de <- data.frame(a_est, b_est)
-  #names(de) <- c("Param_a", 'Param_b')
-  #vals <- rbind(vals, de)
-  #vals$True_a <- a_est
-  #vals$True_b <- b_est
 
   vals <- data.frame(a_est, b_est, a_norm, b_norm)
   names(vals) <- c("shape", "rate", "mean", "variance")
@@ -171,14 +143,14 @@ serial_ests_nonpara <- function(samps, range, bandwidth) {
 nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m = window, R = R_val) {
 
   data <- data.frame(matrix(nrow = days * delta, ncol = 4))
-  colnames(data) <- c('t', 'days', 'R_t', 'infective')
+  colnames(data) <- c('t', 'days', 'R_t', 'infected')
   data$t <- 1:dim(data)[1]
   data$days <- rep(1:days, each = delta)
   data$infected <- NA
   data$infected[1:(tau_m * delta)] <- round(seq(10, 100, length.out = tau_m * delta))
   data$R_t <- rep(R, each = (delta * days / length(R)))
 
-  dist <- rev(gen_distribution(tau_m, sim_mu, sim_var, sim_type, delta))
+  omega <- rev(gen_distribution(tau_m, sim_mu, sim_var, sim_type, delta))
 
   # simulate outbreak
   start <- ((tau_m) * delta) + 1
@@ -186,7 +158,7 @@ nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m
   for (t in start:dim(data)[1]) {
     I_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$infected
     R_mean <- mean(data[which(data$t == t),]$R_t)
-    total_infec <- sum(I_vec * dist)
+    total_infec <- sum(I_vec * omega)
 
     infec <- R_mean * total_infec
     data[which(data$t == t),]$infected <- infec

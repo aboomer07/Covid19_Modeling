@@ -10,7 +10,8 @@ source(paste0(getwd(), "/Code/EvalDist.R"))
 library(deSolve)
 
 
-sir_sim <- function(N, I, R = 0, Rt, serial_mean, serial_var, serial_length, serial_type, serial_delta, outbreak_length){
+sir_sim <- function(N, I, R = 0, Rt, serial_mean, serial_var, serial_length,
+                    serial_type, serial_delta, outbreak_length){
   ## Create an SIR function
   sir <- function(times, state, parameters) {
 
@@ -59,3 +60,6 @@ Rt_est_nonpara(cases, samps$daily, bw = 'iqr')
 
 vals <- serial_ests(samps$daily)
 Rt_est(cases, vals, type = 'gamma')
+
+
+

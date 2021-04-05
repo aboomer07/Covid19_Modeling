@@ -14,11 +14,11 @@ source(paste0(getwd(), "/Code/EvalDist.R"))
 ####################### Set parameters ###############################
 ######################################################################
 
-window <-  11 # simulation window
+tau_m <-  11 # simulation window # TODO!! Needs to be the same as study_len?!
 R_val <- c(1.6, 0.9, 1.3) # incidence R
 n_days <- 180
 delta <- 24*4
-n <- window*delta
+n <- tau_m*delta
 
 # parameters of the simulated distribution
 sim_mean <- 7
@@ -42,7 +42,7 @@ serinfect <- samp_pois(R_val = 1.6, study_len = study_len,
 # get discretized and "continuous" secondary cases
 samps <- serinfect$daily
 sampscont <- serinfect$samplescont
-dist <- serinfect$dist
+dist <- serinfect$omega
 
 # plot serial interval simulation in continuous time
 pdf(file = paste0(outpath, "SerialHistCont_", sim_type, ".pdf"))
