@@ -48,10 +48,14 @@ sir_sim <- function(N, I, R = 0, Rt, serial_mean, serial_var, serial_length, ser
 
 # showcase how it works
 n_days <- 100
-cases <- sir_sim(N = 1e6, I = 10, Rt = 1.4, serial_length = 15, serial_mean = 6.6, serial_var = 1.1,
+cases <- sir_sim(N = 1e9, I = 10, Rt = 1.4, serial_length = 15, serial_mean = 6.6, serial_var = 1.1,
                  serial_type = 'gamma', serial_delta = 1, outbreak_length = n_days)
 
 samps <- samp_pois(1.4, 20, num_people = 100, sim_mu = 6.6, sim_sig = 1.1, sim_type = 'gamma',
                    delta = 24)
 
+
 Rt_est_nonpara(cases, samps$daily, bw = 'iqr')
+
+vals <- serial_ests(samps$daily)
+Rt_est(cases, vals, type = 'gamma')

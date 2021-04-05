@@ -79,8 +79,8 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
 
   func <- function(t) rep(t, sum(rpois(sims, Lambda[t])))
 
-  samples <- do.call(c, sapply(range, func))
-  print(samples)
+  samplescont <- do.call(c, sapply(range, func))
+  print(samplescont)
 
   # for (t in range) {
 
@@ -236,26 +236,24 @@ Rt_est <- function(df, vals, type) {
   return(data)
 }
 
-Rt_est_nonpara <- function(df, samps, corrections) {
+Rt_est_nonpara <- function(df, samps, bw) {
   start <- 10
-  data <- data.frame(matrix(nrow = n_days * length(corrections), ncol = 4))
-  names(data) <- c('Date', 'Cor_Par', 'Rt', 'Est_Rt')
+  data <- data.frame(matrix(nrow = n_days, ncol = 3))
+  names(data) <- c('Date', 'Rt', 'Est_Rt')
 
-  data$Date <- rep(1:n_days, length(corrections))
-  data$Cor_Par <- rep(corrections, each = n_days) # instead of distribution parameters we can correct/opt bandwidth
-  data$Rt <- rep(df['R_val'][[1]], length(corrections))
+  data$Date <- rep(1:n_days)
+  data$Rt <- rep(df['R_val'][[1]])
 
   for (i in start:nrow(data)) {
     if (data[i,]$Date <= start) {
       data[i,]$Est_Rt <- NA
     }
     else {
-      correction <- data[i,]$Cor_Par
       t <- data[i,]$Date
 
-      dist <- rev(serial_ests_nonpara(samps, correction, range = c(1, (t - 1)))$y)
-      I <- df[which(df$days == t),]$infective_day
-      I_window <- df[df$days %in% 1:(t - 1),]$infective_day
+      dist <- rev(serial_ests_nonpara(samps, range = c(1, (t - 1)), bandwidth = bw)$y)
+      I <- df[which(df$days == t),]$infected_day
+      I_window <- df[df$days %in% 1:(t - 1),]$infected_day
       data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
     }
   }
