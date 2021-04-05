@@ -18,6 +18,9 @@ outpath <- paste0(getwd(), '/Output/')
 ############ Generate 'true' distribution #####################
 ###############################################################
 
+# helper function for gamma dist
+cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, rate = b)
+
 gen_distribution <- function(k, mean, variance, type, delta) {
 
   k <- 1:(k*delta)
@@ -25,33 +28,34 @@ gen_distribution <- function(k, mean, variance, type, delta) {
   if (type == 'norm') {
     a <- mean * delta
     b <- variance * delta
-    print(c(a, b))
+    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dnorm(k, a, b)
   }
 
   if (type == 'lnorm') {
     a <- log(mean^2 / (sqrt(mean^2 + variance))) + log(delta)
     b <- log(1 + variance / mean^2)
-    print(c(a, b))
-    omega <- dlnorm(k, a, scale=b)
+    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
+    omega <- dlnorm(k, a,b)
   }
 
   if (type == 'gamma') {
     a <- mean^2 / variance
     b <- (mean / variance) / delta
-    print(c(a, b))
-    omega <- dgamma(k, a, b)    
+    # b <- 1/b
+    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
+    #omega <- k * cdf_gamma(k, a, b) + (k - 2) * cdf_gamma(k - 2, a, b) - 2 * (k - 1) * cdf_gamma(k - 1, a, b)
+    #omega <- omega + a * b * (2 * cdf_gamma(k - 1, a + 1, b) - cdf_gamma(k - 2, a + 1, b) - cdf_gamma(k, a + 1, b))
+    #omega <- sapply(omega, function(e) max(0, e))
+    omega <- dgamma(k, a, b)
   }
 
   if (type == 'weibull') {
     a <- as.numeric(weibullpar(mean, variance)[1])
     b <- as.numeric(weibullpar(mean, variance)[2]) * delta
-    print(c(a, b))
+    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dweibull(k, a, b)
   }
-
-  # plot(omega, type = "l")
-  return(omega)
 
 }
 
@@ -62,9 +66,6 @@ gen_distribution <- function(k, mean, variance, type, delta) {
 
 samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, delta) {
 
-  # data <- data.frame(rep(R_val, each = (study_len*delta / length(R_val))))
-  # names(data) <- "Rt"
-  #Generate Distribution for serial interval
   dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, delta)
   print(length(dist))
   Lambda <- R_val * dist
@@ -89,23 +90,22 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
     # samples <- c(samples, rep(t, sum(rpois(sims, data[t,]$Lambda))))
 
     #Add up all the random poisson infections
-    # for (sim in 1:sims) {
-    #   samples <- c(samples, rep(t, rpois(1, data[t,]$Lambda)))
-    # }
-  # }
 
-  #Make infections daily
+  # Make infections daily
   daily <- c()
   day <- seq(1, study_len*delta, delta)
   
   for (d in 1:length(day)) {
-    for (i in 1:length(samples)) { 
-      if ((samples[i] >= day[d]) & (samples[i] < day[d+1])) {
+    for (i in 1:length(samplescont)) {
+      if ((samplescont[i] >= day[d]) & (samplescont[i] < day[d+1])) {
         daily <- c(daily, d)
       }
     }
   }
-  return(daily)
+
+  # Get output that includes true distribution and simulated secondary cases
+  serinfect <- list(samplescont = samplescont, daily = daily, dist = dist)
+  return(serinfect)
 }
 
 ###############################################################
@@ -116,13 +116,13 @@ serial_ests <- function(samps) {
   params <- list()
 
   #fit  distribution with a gamma
-  fit <- fitdist(samps, "gamma")  # TODO: Is estimate normally distribute?
+  fit <- fitdist(samps, "gamma")
 
   a_est <- as.numeric(fit$estimate[1])
   b_est <- as.numeric(fit$estimate[2])
 
-  a_sd <- as.numeric(fit$sd[1])
-  b_sd <- as.numeric(fit$sd[2])
+  # a_sd <- as.numeric(fit$sd[1])
+  # b_sd <- as.numeric(fit$sd[2])
   
   #Transform parameters into mean and variance
   a_norm <- as.numeric(a_est/b_est)
@@ -155,21 +155,27 @@ serial_ests <- function(samps) {
   return(vals)
 }
 
-serial_ests_nonpara <- function(samps, correction, range) {
-  h_nsr <- 1.059 * sd(samps) * length(samps)^(-1 / 5)
-  kernel_est <- bkde(samps, bandwidth = h_nsr + correction, range.x = range, gridsize = max(range))
+serial_ests_nonpara <- function(samps, range, bandwidth) {
+  if (bandwidth == 'nsr'){
+    h <- 1.059 * sd(samps) * length(samps)^(-1 / 5)
+  }
+  if (bandwidth == 'iqr'){
+    h <- 0.9 * length(samps)^(-1 / 5) * (IQR(samps)/1.34)
+  }
+  kernel_est <- bkde(samps, bandwidth = h, range.x = range, gridsize = max(range))
 }
 
 ###############################################################
 ################ Simulate Incidence Data ######################
 ###############################################################
-nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m = window, R = R_val, N = n) {
+nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m = window, R = R_val) {
 
   data <- data.frame(matrix(nrow = days * delta, ncol = 4))
   colnames(data) <- c('t', 'days', 'R_t', 'infective')
   data$t <- 1:dim(data)[1]
   data$days <- rep(1:days, each = delta)
-  data$infective[1:(tau_m * delta)] <- round(seq(10, 100, length.out = tau_m * delta))
+  data$infected <- NA
+  data$infected[1:(tau_m * delta)] <- round(seq(10, 100, length.out = tau_m * delta))
   data$R_t <- rep(R, each = (delta * days / length(R)))
 
   dist <- rev(gen_distribution(tau_m, sim_mu, sim_var, sim_type, delta))
@@ -178,18 +184,18 @@ nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m
   start <- ((tau_m) * delta) + 1
 
   for (t in start:dim(data)[1]) {
-    I_vec <- data[data$t %in% (t - N):(t - 1),]$infective
+    I_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$infected
     R_mean <- mean(data[which(data$t == t),]$R_t)
     total_infec <- sum(I_vec * dist)
 
     infec <- R_mean * total_infec
-    data[which(data$t == t),]$infective <- infec
+    data[which(data$t == t),]$infected <- infec
   }
 
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
-    summarise(infective_day = round(mean(infective)), R_val = mean(R_t))
+    summarise(infected_day = round(mean(infected)), R_val = mean(R_t))
 
   return(daily_infec)
 }
@@ -221,8 +227,8 @@ Rt_est <- function(df, vals, type) {
       t <- data[i,]$Date
 
       dist <- rev(gen_distribution(t - 1, mean, var, type, 1))
-      I <- df[which(df$days == t),]$infective_day
-      I_window <- df[df$days %in% 1:(t - 1),]$infective_day
+      I <- df[which(df$days == t),]$infected_day
+      I_window <- df[df$days %in% 1:(t - 1),]$infected_day
       data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
     }
   }
@@ -264,4 +270,13 @@ MSE_est <- function(df) {
     summarize(MSE = mean(SSE, na.rm = TRUE), True_est_a = mean(True_est_a), True_est_b = mean(True_est_b))
 
   return(df)
+}
+
+
+MSE_est2 <- function(df) {
+  
+  df$SSE <- (df$true - df$est)^2
+  MSE<-mean(df$SSE)
+  
+  return(MSE)
 }
