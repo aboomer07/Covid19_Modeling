@@ -56,7 +56,7 @@ gen_distribution <- function(k, mean, variance, type, delta) {
     print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dweibull(k, a, b)
   }
-
+  return(omega)
 }
 
 
