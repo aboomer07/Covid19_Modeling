@@ -33,7 +33,7 @@ gen_distribution <- function(k, mean, variance, type, delta) {
     a <- log(mean^2 / (sqrt(mean^2 + variance))) + log(delta)
     b <- log(1 + variance / mean^2)
     print(c(a, b))
-    omega <- dlnorm(k, a,b)
+    omega <- dlnorm(k, a, scale=b)
   }
 
   if (type == 'gamma') {
@@ -50,7 +50,7 @@ gen_distribution <- function(k, mean, variance, type, delta) {
     omega <- dweibull(k, a, b)
   }
 
-  plot(omega, type = "l")
+  # plot(omega, type = "l")
   return(omega)
 
 }
@@ -62,27 +62,37 @@ gen_distribution <- function(k, mean, variance, type, delta) {
 
 samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, delta) {
 
-  data <- data.frame(rep(R_val, each = (study_len*delta / length(R_val))))
-  names(data) <- "Rt"
-  data$Lambda <- rep(0, study_len*delta)
-
-  sims <- num_people
-  samples <- c()
-
-  range <- 1:nrow(data)
-
+  # data <- data.frame(rep(R_val, each = (study_len*delta / length(R_val))))
+  # names(data) <- "Rt"
   #Generate Distribution for serial interval
   dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, delta)
-  for (t in range) {
+  print(length(dist))
+  Lambda <- R_val * dist
+  print(length(Lambda))
+
+  sims <- num_people
+  # samples <- c()
+
+  range <- 1:(study_len*delta)
+  print(length(range))
+
+  func <- function(t) rep(t, sum(rpois(sims, Lambda[t])))
+
+  samples <- do.call(c, sapply(range, func))
+  print(samples)
+
+  # for (t in range) {
 
     # get mean infectivity for respective day of study
-    data[t,]$Lambda <- data[t,]$Rt * dist[t]
+    # data[t,]$Lambda <- data[t,]$Rt * dist[t]
+
+    # samples <- c(samples, rep(t, sum(rpois(sims, data[t,]$Lambda))))
 
     #Add up all the random poisson infections
-    for (sim in 1:sims) {
-      samples <- c(samples, rep(t, rpois(1, data[t,]$Lambda)))
-    }
-  }
+    # for (sim in 1:sims) {
+    #   samples <- c(samples, rep(t, rpois(1, data[t,]$Lambda)))
+    # }
+  # }
 
   #Make infections daily
   daily <- c()
@@ -97,7 +107,6 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
   }
   return(daily)
 }
-
 
 ###############################################################
 ################ Estimate Serial Interval #####################
