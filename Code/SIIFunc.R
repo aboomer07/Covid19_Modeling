@@ -14,7 +14,7 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
   colnames(data) <- c('t', 'days', 'R_t', 'infected', 'S', 'N')
   data$t <- 1:dim(data)[1]
   data$days <- rep(1:days, each = delta)
-  data$infected[1:(tau_m * delta)] <- round(seq(100, 1000, length.out = tau_m * delta))
+  data$infected[1:(tau_m * delta)] <- round(seq(10, 10, length.out = tau_m * delta))/delta
   data$R_t <- rep(R, each = (delta * days / length(R)))
   data$N <- N
   data$S[1] <- data$N[1] - data$infected[1]
@@ -44,7 +44,7 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
-    summarise(infected_day = round(mean(infected)), R_val = mean(R_t),
+    summarise(infected_day = round(sum(infected)), R_val = mean(R_t),
               S_daily = mean(S), N = mean(N)) %>%
     mutate(I_daily = round(N - S_daily))
 
@@ -54,19 +54,25 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
 
 
 ## Plot
-si_plot <- function (daily_infect){
-  plot(x = daily_infec$days, y = daily_infec$S_daily,
+si_plot <- function (model){
+  plot(x = model$days, y = model$S_daily,
        type="l", col = "blue", lwd=2,
        ylim = c(0,population), ylab = "Susceptible and Infected Population", xlab = "Days")
-  lines(x = daily_infec$days, y = daily_infec$I_daily,
+  lines(x = model$days, y = model$I_daily,
         type = "l", col = "orange", lwd=2)
   legend("topright", legend = c("Susceptible", "Infected"), col = c("blue", "orange"), pch = 16, bty = "n")
 }
 
 
 # test
+delta <- 24
+n_days <- 300
+population <- 1e6
 si_model <- si_sim(sim_mu, sim_var, sim_type, delta, n_days, tau_m, R = 1.5, N = population)
 si_plot(si_model)
+
+
+test <- nour_sim_data(sim_mu, sim_var, sim_type, delta, n_days, tau_m, R = 1.5)
 
 
 
@@ -136,11 +142,11 @@ sii_sim <- function(sim_mu1, sim_var1, sim_type1, sim_mu2, sim_var2, sim_type2,
 
 
 ## Plot
-si_plot <- function (daily_infect){
-  plot(x = daily_infec$days, y = daily_infec$S_daily,
+si_plot <- function (model){
+  plot(x = model$days, y = model$S_daily,
        type="l", col = "blue", lwd=2,
        ylim = c(0,population), ylab = "Susceptible and Infected Population", xlab = "Days")
-  lines(x = daily_infec$days, y = daily_infec$I_daily,
+  lines(x = model$days, y = model$I_daily,
         type = "l", col = "orange", lwd=2)
   legend("topright", legend = c("Susceptible", "Infected"), col = c("blue", "orange"), pch = 16, bty = "n")
 }
@@ -149,5 +155,3 @@ si_plot <- function (daily_infect){
 # test
 si_model <- si_sim(sim_mu, sim_var, sim_type, delta, n_days, tau_m, R = 1.5, N = population)
 si_plot(si_model)
-
-
