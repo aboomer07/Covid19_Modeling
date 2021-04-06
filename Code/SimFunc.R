@@ -65,7 +65,7 @@ gen_distribution <- function(k, mean, variance, type, delta) {
 
 samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, delta) {
 
-	Rt <- rep(R_val, each = (study_len*delta/length(R_val)))
+  Rt <- rep(R_val, each = (study_len*delta/length(R_val)))
   sims <- num_people
 
   # Generate Distribution for serial interval
@@ -173,7 +173,7 @@ params_distribution <- function(R_val, study_len, num_people, sim_mu,
 
   simulations <- sims
   estimates <- data.frame(ncol = 4, nrow = simulations)
-  
+
   for (i in 1:simulations){
     serinfect <- samp_pois(R_val = R_val, study_len = study_len,
               num_people = num_people, sim_mu = sim_mu,
@@ -191,23 +191,23 @@ params_distribution <- function(R_val, study_len, num_people, sim_mu,
     names(estimates) <- c("shape_hat", "rate_hat", "shape_sd", "rate_sd",
                "cov_hat", "mean_hat", "var_hat", "n")
     }
-  
+
   #Delta method to get standard errors of the mean and the variance
   deltag <- matrix(ncol = 2, nrow = simulations)
-  
+
   for (i in 1:simulations) {
     gradient <- matrix(ncol = 2, nrow = 2)
-    gradient[1,1] <- 1/estimates$rate_hat[i] 
+    gradient[1,1] <- 1/estimates$rate_hat[i]
     gradient[1,2] <- -estimates$shape_hat[i]/estimates$rate_hat[i]^2
     gradient[2,1] <- 1/estimates$rate_hat[i]^2
     gradient[2,2] <- -2*estimates$shape_hat[i]/estimates$rate_hat[i]^3
-  
+
     varcov <- matrix(ncol = 2, nrow =2)
     varcov[1,2] <- estimates$cov[i]
     varcov[2,1] <- estimates$cov[i]
     varcov[1,1] <- estimates$shape_hat[i]^2
     varcov[2,2] <- estimates$rate_hat[i]^2
-  
+
     temp.matrix <- t(gradient) %*% varcov %*% gradient
     deltag[i, 1] <- sqrt(temp.matrix[1,1]/estimates$n[i])
     deltag[i, 2] <- sqrt(temp.matrix[2,2]/estimates$n[i])
