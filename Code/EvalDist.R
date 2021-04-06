@@ -238,7 +238,7 @@ serial_est_plot_full <- function(study_len, sim_mean, sim_var, sim_type, R_val, 
 ######################################################################
 
 infections_plot <- function(incid){
-	infected <- incid$infective_day
+	infected <- incid$infected_day
 	Rt_sim <- incid$R_val
 
 	layout(matrix(1:2, ncol = 1, nrow =2))
