@@ -233,6 +233,19 @@ compare_rt <- function(Rt){
 }
 
 
+# evaluate performance of non parametric estimator
+
+# sims is the number of simulations
+R_val <- 1.3; study_len <- 15; num_people <- 40; sim_mu <- 6.6; sim_sig <- 1.1;
+sim_type <- 'gamma'; delta <- 24; bw <- 'nsr'; sims <- 1000
+
+true_dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, 1)
+
+est_dist <- nonpara_eval(R_val, study_len, num_people, sim_mu,
+  sim_sig, sim_type, delta, sims, bw)
+
+plot_nonpara_eval(true_dist, est_dist)
+
 
 
 

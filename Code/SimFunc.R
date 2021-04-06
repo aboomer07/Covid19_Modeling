@@ -229,6 +229,43 @@ params_distribution <- function(R_val, study_len, num_people, sim_mu,
 
 }
 
+
+nonpara_eval <- function(R_val, study_len, num_people, sim_mu,
+  sim_sig, sim_type, delta, sims, bw){
+
+  simulations <- list()
+  for (i in 1:sims){
+    simulation <- data.frame(matrix(ncol = 4, nrow = study_len))
+    serinfect <- samp_pois(R_val = R_val, study_len = study_len,
+              num_people = num_people, sim_mu = sim_mu,
+              sim_sig = sim_sig, sim_type = sim_type, delta = delta)
+
+    out <- serial_ests_nonpara(serinfect$daily, range = c(1, study_len), bandwidth = bw)
+
+    simulation[ ,1] <- out$x
+    simulation[, 2] <- out$y
+    simulation[, 3] <- i
+    simulation[, 4] <- bw
+    simulations[[i]] <- simulation
+  }
+  full <- do.call('rbind', simulations)
+  colnames(full) <- c('X', 'Y', 'Sim', 'Bandwidth')
+  return(full)
+}
+
+
+plot_nonpara_eval <- function(true_dist, est_dist) {
+  conf <- est_dist %>% group_by(X) %>%
+    summarise(upper = max(Y),
+              lower = min(Y))
+  png(paste0(outpath, 'SerialEst_nonpara_', length(est_dist$X), '.png'))
+  plot(true_dist, type = 'l', ylim=c(0,max(conf$upper)))
+  lines(conf$lower, lty = "dotted", col = "blue")
+  lines(conf$upper, lty = "dotted", col = "blue")
+  dev.off()
+}
+
+
 ###############################################################
 #################### Estimate Rt ##############################
 ###############################################################
