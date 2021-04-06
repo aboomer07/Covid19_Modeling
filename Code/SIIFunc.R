@@ -26,7 +26,8 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
   # Simulate initial infected spreading disease during burn-in period
   for (t in 2:(tau_m * delta)){
     data$S[t] <- data$S[t-1] - data$infected[t-1]
-    data$infected[t] <- sum(data$infected[1:t-1]) * R / (delta*2)
+    # data$infected[t] <- sum(data$infected[1:t-1]) * R / (delta*2)
+    data$infected[t] <- 10/delta
     data$I[t] <- data$I[t-1] + data$infected[t]
   }
 
@@ -45,7 +46,7 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
     ## get omega(n*delta) I(t-n*delta) => total_infec (= All infected for a TSI from 1 until tau_m at all deltas)
     I_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$infected
     R_mean <- mean(data$R_t[t])
-    I_p <- R_mean * (1/delta) * omega * I_vec * data$S[t] / data$N[t]
+    I_p <- R_mean * omega * I_vec * data$S[t] / data$N[t] #* (1/delta)
     ## get I(u)
     infec <- sum(I_p)
     data$infected[t] <- infec
@@ -62,12 +63,13 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
-    summarise(infected_day = round(sum(infected)), R_val = mean(R_t),
-              S_daily = sum(S), N = mean(N)) %>%
+    summarise(infected_day = round(mean(infected)), R_val = mean(R_t),
+              S_daily = mean(S), N = mean(N)) %>%
     mutate(I_daily = round(N - S_daily))
 
   return(daily_infec)
 }
+
 
 
 
@@ -83,7 +85,7 @@ si_plot <- function (model){
 
 
 # test
-delta <- 4
+delta <- 24
 n_days <- 300
 population <- 6e6
 sim_type <- "weibull"
@@ -122,9 +124,9 @@ sii_sim <- function(sim_mu1, sim_var1, sim_type1, sim_mu2, sim_var2, sim_type2,
   data$R_t2 <- rep(R2, each = (delta * days / length(R2)))
 
   # start of the two pandemics (1 assumed to start in beginning, 2 is variable)
-  data$new_infected1[1:(tau_m * delta)] <- round(seq(10, 10, length.out = tau_m * delta))/delta
+  data$new_infected1[1:(tau_m * delta)] <- 1
   data[1:(start_mutation * delta),]$new_infected2 <- 0
-  data$new_infected2[(start_mutation * delta+1):(start_mutation*delta + (tau_m * delta))] <- round(seq(10, 10, length.out = tau_m * delta))/delta
+  data$new_infected2[(start_mutation * delta+1):(start_mutation*delta + (tau_m * delta))] <- 1
 
   data$S[1] <- data$N[1] - data$new_infected1[1] - data$new_infected2[1]
   for (t in 2:(tau_m * delta)){
@@ -176,8 +178,8 @@ sii_sim <- function(sim_mu1, sim_var1, sim_type1, sim_mu2, sim_var2, sim_type2,
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
-    summarise(infected_day1 = round(sum(new_infected1)),
-              infected_day2 = round(sum(new_infected2)),
+    summarise(infected_day1 = round(mean(new_infected1)),
+              infected_day2 = round(mean(new_infected2)),
               R1_val = mean(R_t1),
               R2_val = mean(R_t2),
               S_daily = mean(S), N = mean(N)) %>%
@@ -199,8 +201,8 @@ si_plot <- function (model){
 
 
 # test
-R1 <- 1.2; R2 <- 1.7; sim_mu1 <- 7; sim_var1 <- 2; sim_mu2 <- 3; sim_var2 <- 1
-sim_type1 <- "gamma"; sim_type2 <- "gamma"; N <- 60000000; start_mutation <- 20
+R1 <- 1.2; R2 <- 1.4; sim_mu1 <- 7; sim_var1 <- 2; sim_mu2 <- 7; sim_var2 <- 2
+sim_type1 <- "gamma"; sim_type2 <- "gamma"; N <- 60000000; start_mutation <- 100
 
 si_model <- sii_sim(sim_mu1, sim_var1, sim_type1,
                     sim_mu2, sim_var2, sim_type2,
