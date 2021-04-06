@@ -9,18 +9,25 @@ source(paste0(getwd(), "/Code/EvalDist.R"))
 
 si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
                           tau_m = tau_m, R = R_val, N = population) {
-
+  # Setup environment
   data <- data.frame(matrix(nrow = days * delta, ncol = 6))
   colnames(data) <- c('t', 'days', 'R_t', 'infected', 'S', 'N')
   data$t <- 1:dim(data)[1]
   data$days <- rep(1:days, each = delta)
-  data$infected[1:(tau_m * delta)] <- round(seq(10, 10, length.out = tau_m * delta))/delta
   data$R_t <- rep(R, each = (delta * days / length(R)))
   data$N <- N
+
+  # start of epidemic (burn-in)
+  # Assume 1 initial ifected and that new ifections happen every 4 days depending on specified R (for bun-in)
+  data$infected[1] <- 1
   data$S[1] <- data$N[1] - data$infected[1]
-  # remember that infected are new daily infections, not total
+  data$I <- data$infected
+
+  # Simulate initial infected spreading disease during burn-in period
   for (t in 2:(tau_m * delta)){
     data$S[t] <- data$S[t-1] - data$infected[t-1]
+    data$infected[t] <- sum(data$infected[1:t-1]) * R / (delta*2)
+    data$I[t] <- data$I[t-1] + data$infected[t]
   }
 
   omega <- rev(gen_distribution(tau_m, sim_mu, sim_var, sim_type, delta))
@@ -30,22 +37,33 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
 
   for (t in start:dim(data)[1]) {
 
-    # update susceptible
-    data[which(data$t == t),]$S <- data[which(data$t == t)-1,]$S - data[which(data$t == t)-1,]$infected
+    # update susceptible population
+    data$S[t] <- data$S[t-1] - data$infected[t-1]
 
+    # compute I(u):
+    ## compute I(p) first:
+    ## get omega(n*delta) I(t-n*delta) => total_infec (= All infected for a TSI from 1 until tau_m at all deltas)
     I_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$infected
-    R_mean <- mean(data[which(data$t == t),]$R_t)
-    total_infec <- sum(I_vec * omega)
-    # multiply TSI with S/N
-    infec <- R_mean * total_infec * data[which(data$t == t),]$S / data[which(data$t == t),]$N
-    data[which(data$t == t),]$infected <- infec
+    R_mean <- mean(data$R_t[t])
+    I_p <- R_mean * (1/delta) * omega * I_vec * data$S[t] / data$N[t]
+    ## get I(u)
+    infec <- sum(I_p)
+    data$infected[t] <- infec
+
+    # update total infected
+    data$I[t] <- data$I[t] + infec
   }
+
+  plot(data$infected, type='l')
+  abline(v=tau_m*delta, col='red')
+
+  #which(data$infected == max(data$infected), arr.ind=T)
 
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
     summarise(infected_day = round(sum(infected)), R_val = mean(R_t),
-              S_daily = mean(S), N = mean(N)) %>%
+              S_daily = sum(S), N = mean(N)) %>%
     mutate(I_daily = round(N - S_daily))
 
   return(daily_infec)
@@ -65,14 +83,24 @@ si_plot <- function (model){
 
 
 # test
-delta <- 24
+delta <- 4
 n_days <- 300
-population <- 1e6
+population <- 6e6
+sim_type <- "weibull"
 si_model <- si_sim(sim_mu, sim_var, sim_type, delta, n_days, tau_m, R = 1.5, N = population)
 si_plot(si_model)
 
+si_model <- si_sim(sim_mu, sim_var, sim_type, delta, n_days, tau_m, R = 1.5, N = population)
+si_plot(si_model)
+
+si_plot(daily_infec)
+
 
 test <- nour_sim_data(sim_mu, sim_var, sim_type, delta, n_days, tau_m, R = 1.5)
+
+
+
+
 
 
 
