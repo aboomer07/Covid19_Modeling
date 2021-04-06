@@ -22,10 +22,10 @@ n <- tau_m*delta
 
 # parameters of the simulated distribution
 sim_mean <- 7
-sim_var <- 2
+sim_var <- 3
 study_len <- 20
 num_people <- 30
-simulations <- 100
+simulations <- 1000
 sim_type <- "gamma"
 set.seed(14152118) #It spells Nour in numbers hihihi
 
@@ -109,7 +109,7 @@ dev.off()
 ############## Simulate Incidence ####################################
 ######################################################################
 # simulate outbreak
-incid <- nour_sim_data(sim_mean, sim_var, 'weibull', delta) # important! must be same dist as in samp_pois
+incid <- nour_sim_data(sim_mean, sim_var, sim_type, delta) # important! must be same dist as in samp_pois
 
 # plot outbreak
 pdf(file = paste0(outpath, "Infections_", sim_type, ".pdf"))
