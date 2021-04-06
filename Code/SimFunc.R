@@ -10,6 +10,7 @@ library(data.table)
 library(np)
 library(KernSmooth)
 library(mixdist)
+library(msm)
 
 
 
@@ -66,27 +67,19 @@ gen_distribution <- function(k, mean, variance, type, delta) {
 
 samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, delta) {
 
-  data <- data.frame(rep(R_val, each = (study_len*delta / length(R_val))))
-  names(data) <- "Rt"
-  data$Lambda <- rep(0, study_len*delta)
+  Rt <- rep(R_val, each = (study_len*delta/length(R_val)))
 
   sims <- num_people
-  samplescont <- c()
-
-  range <- 1:nrow(data)
 
   # Generate Distribution for serial interval
   dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, delta)
-  for (t in range) {
+  Lambda <- Rt * dist
 
-    # get mean infectivity for respective day of study
-    data[t,]$Lambda <- data[t,]$Rt * dist[t]
+  sims <- num_people
+  range <- 1:(study_len*delta)
 
-    #Add up all the random poisson infections
-    for (sim in 1:sims) {
-      samplescont <- c(samplescont, rep(t, rpois(1, data[t,]$Lambda)))
-    }
-  }
+  func <- function(t) rep(t, sum(rpois(sims, Lambda[t])))
+  samplescont <- do.call(c, sapply(range, func))
 
   # Make infections daily
   daily <- c()
@@ -114,13 +107,15 @@ serial_ests <- function(samps) {
   params <- list()
 
   #fit  distribution with a gamma
-  fit <- fitdist(samps, "gamma")
+  fit <- fitdist(samps, "gamma", method = "mle")
 
   a_est <- as.numeric(fit$estimate[1])
   b_est <- as.numeric(fit$estimate[2])
 
-  # a_sd <- as.numeric(fit$sd[1])
-  # b_sd <- as.numeric(fit$sd[2])
+  a_sd <- as.numeric(fit$sd[1])
+  b_sd <- as.numeric(fit$sd[2])
+
+  a_cov <- as.numeric(fit$vcov[1,2])
   
   #Transform parameters into mean and variance
   a_norm <- as.numeric(a_est/b_est)
@@ -148,8 +143,7 @@ serial_ests <- function(samps) {
   #vals$True_a <- a_est
   #vals$True_b <- b_est
 
-  vals <- data.frame(a_est, b_est, a_norm, b_norm)
-  names(vals) <- c("shape", "rate", "mean", "variance")
+  vals <- list(shape = a_est, rate = b_est, shape_sd = a_sd, rate_sd = b_sd, cov = a_cov, meanhat = a_norm, varhat = b_norm)
   return(vals)
 }
 
