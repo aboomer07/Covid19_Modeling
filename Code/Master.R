@@ -24,8 +24,9 @@ n <- tau_m*delta
 sim_mean <- 7
 sim_var <- 2
 study_len <- 20
-num_people <- 100
-sim_type <- "weibull"
+num_people <- 30
+simulations <- 100
+sim_type <- "gamma"
 set.seed(14152118) #It spells Nour in numbers hihihi
 
 sim_mu <- sim_mean
@@ -53,6 +54,19 @@ dev.off()
 pdf(file = paste0(outpath, "SerialHistDisc_", sim_type, ".pdf"))
 serial_hist_disc(samps)
 dev.off()
+
+######################################################################
+############# Simulate Distribution of Estimators ####################
+######################################################################
+
+
+SI.simulation <- params_distribution(R_val = 1.6, study_len = study_len,
+					   num_people = num_people, sim_mu = sim_mean,
+					   sim_sig = sim_var, sim_type = sim_type, delta = delta, 
+					   sims = simulations)
+
+SI.plot <- SI_plot_distribution(data = SI.simulation)
+
 
 ######################################################################
 ############## Estimate Serial Interval ##############################

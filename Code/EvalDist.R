@@ -33,116 +33,77 @@ serial_hist_disc <- function (samps){
 
 
 
-######################################################################
-############## Serial Interval Estimation Plot  ######################
-######################################################################
+#####################################################################################
+############## Serial Interval Simulation and Estimation Plot  ######################
+#####################################################################################
 
-# simulate several serial interval study
-simulations <- 100000
-estimates <- data.frame(ncol = 4, nrow = simulations)
-
-for (i in 1:simulations){
-serinfect <- samp_pois(R_val = 1.6, study_len = study_len,
-					   num_people = num_people, sim_mu = sim_mean,
-					   sim_sig = sim_var, sim_type = "norm", delta = delta)
-vals <- serial_ests(serinfect$daily) # here we obtain the params for Rt_est
-print(i)
-estimates[i, 1] <- vals$shape
-estimates[i, 2] <- vals$rate
-estimates[i, 3] <- vals$shape_sd
-estimates[i, 4] <- vals$rate_sd
-estimates[i, 5] <- vals$cov
-estimates[i, 6] <- vals$meanhat
-estimates[i, 7] <- vals$varhat
-estimates[i, 8] <- length(serinfect$daily)
-names(estimates) <- c("shape_hat", "rate_hat", "shape_sd", "rate_sd",
-							"cov_hat", "mean_hat", "var_hat", "n")
-}
-
-#Delta method to get standard errors of the mean and the variance
-deltag <- matrix(ncol = 2, nrow = simulations)
-
-for (i in 1:simulations) {
-gradient <- matrix(ncol = 2, nrow = 2)
-gradient[1,1] <- 1/estimates$rate_hat[i] 
-gradient[1,2] <- -estimates$shape_hat[i]/estimates$rate_hat[i]^2
-gradient[2,1] <- 1/estimates$rate_hat[i]^2
-gradient[2,2] <- -2*estimates$shape_hat[i]/estimates$rate_hat[i]^3
-
-
-varcov <- matrix(ncol = 2, nrow =2)
-varcov[1,2] <- estimates$cov[i]
-varcov[2,1] <- estimates$cov[i]
-varcov[1,1] <- estimates$shape_hat[i]^2
-varcov[2,2] <- estimates$rate_hat[i]^2
-
-temp.matrix <- t(gradient) %*% varcov %*% gradient
-deltag[i, 1] <- sqrt(temp.matrix[1,1]/estimates$n[i])
-deltag[i, 2] <- sqrt(temp.matrix[2,2]/estimates$n[i])
-}
-
-#True daily gamma implied by our parameters is given by: 
+#Always run this and manually change the parameters in the graph... 
 true_gamma <- gen_distribution(study_len, sim_mean, sim_var, "gamma", 1)
 
-#Store parameters of interest
-avg_shape_hat <- mean(estimates$shape_hat)
-avg_shape_sd <- mean(estimates$shape_sd)
-avg_rate_hat <- mean(estimates$rate_hat)
-avg_rate_sd <- mean(estimates$rate_sd)
-avg_mean_hat <- mean(estimates$mean_hat)
-avg_mean_sd <- mean(deltag[1])
-avg_var_hat <- mean(estimates$var_hat)
-avg_var_sd <- mean(deltag[2])
+SI_plot_distribution <- function(data){
 
-#Show distribution of estimates 
-pdf(file = paste0(outpath, "SerialEstSim_S", simulations, ".pdf"))
-layout(matrix(1:4, nrow = 2, ncol=2))
-#Alpha hat 
-hist(estimates$shape_hat, nclass = 20, xlab = "", 
-	main = expression(paste("Estimated ", alpha, ", sample size = 100,000")))
-abline(v = avg_shape_hat, lwd = 2, lty = "solid", col = "blue")
-abline(v = (avg_shape_hat-1.96*avg_shape_sd), lwd = 1, lty = "dotted", col = "blue")
-abline(v = (avg_shape_hat+1.96*avg_shape_sd), lwd = 1, lty = "dotted", col = "blue")
-abline(v = 24.5, lwd = 2, lty = "solid", col = "red")
-legend("topright", 
+	estimates <- data$distribution
+	avg_shape_hat <- data$avg_params[1]
+	avg_shape_sd <- data$avg_params[2]
+	avg_rate_hat <- data$avg_params[3]
+	avg_rate_sd <- data$avg_params[4]
+	avg_mean_hat <- data$avg_params[5]
+	avg_mean_sd <- data$avg_params[6]
+	avg_var_hat <- data$avg_params[7]
+	avg_var_sd <- data$avg_params[8]
+
+	#Show distribution of estimates 
+	pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, ".pdf"))
+	par(mfrow = c(2,2))
+	#Alpha hat 
+	hist(estimates$shape_hat, nclass = 20, xlab = "", 
+		main = expression(paste("Estimated ", alpha)))
+	abline(v = avg_shape_hat, lwd = 2, lty = "solid", col = "blue")
+	abline(v = (avg_shape_hat-1.96*avg_shape_sd), lwd = 1, lty = "dotted", col = "blue")
+	abline(v = (avg_shape_hat+1.96*avg_shape_sd), lwd = 1, lty = "dotted", col = "blue")
+	abline(v = 24.5, lwd = 2, lty = "solid", col = "red")
+	legend("topright", 
 	   c(expression(paste("Mean ", hat(alpha))), "95% CI", expression(paste("True ", alpha))),
 	   lty = c(1, 2, 1),  
 	   col = c("blue", "blue", "red"))
-#Beta hat
-hist(estimates$rate_hat, nclass = 20, xlab = "", 
-	main = expression(paste("Estimated ", beta, ", sample size = 100,000")))
-abline(v = avg_rate_hat, lwd = 2, lty = "solid", col = "blue")
-abline(v = (avg_rate_hat-1.96*avg_rate_sd), lwd = 1, lty = "dotted", col = "blue")
-abline(v = (avg_rate_hat+1.96*avg_rate_sd), lwd = 1, lty = "dotted", col = "blue")
-abline(v = 3.5, lwd = 2, lty = "solid", col = "red")
-legend("topright", 
-	   c(expression(paste("Mean ", hat(beta))), "95% CI", expression(paste("True ", beta))),
-	   lty = c(1, 2, 1),  
-	   col = c("blue", "blue", "red"))
-#Implied mean
-hist(estimates$mean_hat, nclass = 20, xlab = "", 
-	main = expression(paste("Estimated ", mu, ", sample size = 100,000")))
-abline(v = avg_mean_hat, lwd = 2, lty = "solid", col = "blue")
-abline(v = (avg_mean_hat-1.96*avg_mean_sd), lwd = 1, lty = "dotted", col = "blue")
-abline(v = (avg_mean_hat+1.96*avg_mean_sd), lwd = 1, lty = "dotted", col = "blue")
-abline(v = 7, lwd = 2, lty = "solid", col = "red")
-legend("topright", 
-	   c(expression(paste("Mean ", hat(mu))), "95% CI", expression(paste("True ", mu))),
-	   lty = c(1, 2, 1),  
-	   col = c("blue", "blue", "red"))
-#Implied variance
-hist(estimates$var_hat, nclass = 20, xlab = "", 
-	main = expression(paste("Estimated ", sigma^2, ", sample size = 100,000")))
-abline(v = avg_var_hat, lwd = 2, lty = "solid", col = "blue")
-abline(v = (avg_var_hat-1.96*avg_var_sd), lwd = 1, lty = "dotted", col = "blue")
-abline(v = (avg_var_hat+1.96*avg_var_sd), lwd = 1, lty = "dotted", col = "blue")
-abline(v = 2, lwd = 2, lty = "solid", col = "red")
-legend("topright", 
-	   c(expression(paste("Mean ", hat(sigma^2))), "95% CI", expression(paste("True ", sigma^2))),
-	   lty = c(1, 2, 1),  
-	   col = c("blue", "blue", "red"))
-dev.off()
-
+	#Beta hat
+	hist(estimates$rate_hat, nclass = 20, xlab = "", 
+		main = expression(paste("Estimated ", beta)))
+	abline(v = avg_rate_hat, lwd = 2, lty = "solid", col = "blue")
+	abline(v = (avg_rate_hat-1.96*avg_rate_sd), lwd = 1, lty = "dotted", col = "blue")
+	abline(v = (avg_rate_hat+1.96*avg_rate_sd), lwd = 1, lty = "dotted", col = "blue")
+	abline(v = 3.5, lwd = 2, lty = "solid", col = "red")
+	legend("topright", 
+		   c(expression(paste("Mean ", hat(beta))), "95% CI", expression(paste("True ", beta))),
+		   lty = c(1, 2, 1),  
+		   col = c("blue", "blue", "red"))
+	#Implied mean
+	hist(estimates$mean_hat, nclass = 20, xlab = "", 
+		main = expression(paste("Estimated ", mu)))
+	abline(v = avg_mean_hat, lwd = 2, lty = "solid", col = "blue")
+	abline(v = (avg_mean_hat-1.96*avg_mean_sd), lwd = 1, lty = "dotted", col = "blue")
+	abline(v = (avg_mean_hat+1.96*avg_mean_sd), lwd = 1, lty = "dotted", col = "blue")
+	abline(v = 7, lwd = 2, lty = "solid", col = "red")
+	legend("topright", 
+		   c(expression(paste("Mean ", hat(mu))), "95% CI", expression(paste("True ", mu))),
+		   lty = c(1, 2, 1),  
+		   col = c("blue", "blue", "red"))
+	#Implied variance
+	hist(estimates$var_hat, nclass = 20, xlab = "", 
+		main = expression(paste("Estimated ", sigma^2)))
+	abline(v = avg_var_hat, lwd = 2, lty = "solid", col = "blue")
+	abline(v = (avg_var_hat-1.96*avg_var_sd), lwd = 1, lty = "dotted", col = "blue")
+	abline(v = (avg_var_hat+1.96*avg_var_sd), lwd = 1, lty = "dotted", col = "blue")
+	abline(v = 2, lwd = 2, lty = "solid", col = "red")
+	legend("topright", 
+		   c(expression(paste("Mean ", hat(sigma^2))), "95% CI", expression(paste("True ", sigma^2))),
+		   lty = c(1, 2, 1),  
+		   col = c("blue", "blue", "red"))
+	#Title
+	mtext(paste0("Sample size = ", simulations), side = 3, line = -3, outer = TRUE)
+	mtext(paste0("Sample size = ", simulations), side = 3, line = -24, outer = TRUE)
+	dev.off()
+}
 
 
 serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpara = F){
