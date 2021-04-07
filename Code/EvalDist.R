@@ -214,15 +214,37 @@ serial_est_plot_full <- function(params, nonpara = F, bw = NULL){
 ##############         Simulate Incidence       ######################
 ######################################################################
 
-infections_plot <- function(incid){
-	infected <- incid$infected_day
-	Rt_sim <- incid$R_val
+infections_plot <- function(incid, params, variant=F, ssii=F){
 
+	if (variant) {
+		y_max <- max(max(incid$I1_daily), max(incid$I2_daily))
+		title <- paste0("New infections per day (", params$sim_type, ")")
+		if (ssii) {title <- paste0(title, " CrossOver = ", params$sii_cross)}
+
+		layout(matrix(1:2, ncol = 1, nrow =2))
+		plot(incid$I1_daily, type = "l", 
+		main = title, xlab = "", ylab = "New infections",
+		ylim=c(0, 60000))
+		lines(incid$I2_daily, col='red')
+		legend('topleft',
+			legend=c("Original Strain", 'Variant'),
+			col=c("black", 'red'), lty=1, cex=0.9)
+		plot(incid$R1_val, type = "l", main = "Simulated R(t)", 
+		xlab = "Day", ylab = "R(t)", ylim = c(0, 2))
+		lines(incid$R2_val, main = "Simulated R(t) Variant", 
+		xlab = "Day", ylab = "R(t)", ylim = c(0, 2), col='red')
+		legend('bottomleft',
+			legend=c("Original Strain", 'Variant'),
+			col=c("black", 'red'), lty=1, cex=0.9)
+	}
+	else {
 	layout(matrix(1:2, ncol = 1, nrow =2))
-	plot(infected, type = "l", main = paste0("New infections per day (", sim_type, ")"),
-		 xlab = "", ylab = "New infections")
-	plot(Rt_sim, type = "l", main = "Simulated R(t)", xlab = "Day", ylab = "R(t)",
-		 ylim = c(0, 2))
+	plot(incid$infected_day, type = "l", 
+		main = paste0("New infections per day (", params$sim_type, ")"),
+		xlab = "", ylab = "New infections")
+	plot(incid$R_val, type = "l", main = "Simulated R(t)", 
+		xlab = "Day", ylab = "R(t)", ylim = c(0, 2))
+	}
 }
 
 ### Draw daily incidence of cases and corresponding Rt, given type of omega #
@@ -232,27 +254,32 @@ infections_plot <- function(incid){
 ### Compare estimate of Rt to its true value 
 
 compare_rt <- function(Rt, params = NULL, variant = F){
-	start_variant <- params[['start_variant']]
+	start_variant <- params[['start_variant']] + params[['tau_m']]
 	n_days <- params[['n_days']]
+
 	if(variant){
+		y_max <- max(max(Rt$Est_Rt, na.rm=T), max(Rt$Rt1), max(Rt$Rt2))
 		Rt2 <- c(rep(NA, start_variant), Rt$Rt2[start_variant + 1:n_days])
-		plot(Rt$Rt1, type = "l", main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
-			 xlab = "Day", ylab = "R(t)", col = "red", ylim = c(min(c(min(Rt$Est_Rt, na.rm=T), min(Rt$Rt1, na.rm = T))),
-															max(Rt$Est_Rt, na.rm=T)), lwd = 2)
+		plot(Rt$Rt1, type = "l", 
+			main = paste0("R(t) estimation, true distribution: ", 
+			params[['sim_type']]), xlab = "Day", ylab = "R(t)", 
+			col = "red", ylim = c(0, y_max*1.2), lwd = 2)
 		lines(Rt2, col = "orange", lwd=2)
 		lines(Rt$Est_Rt, col = "black", lwd=2)
 		abline(v = start_variant, lwd = 2, lty = "dotted")
-		legend("topright", legend = c("True R(t)", "True R(t) Variant", "Estimated R(t)"),
-	       col = c("red", "orange", "black"), lty=1, cex=0.9)
+		legend("topleft", 
+			legend = c("True R(t)", "True R(t) Variant", "Estimated R(t)"),
+			col = c("red", "orange", "black"), lty=1, cex=0.9)
 	}
 
 	else{
-	plot(Rt$Rt, type = "l", main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
-		 xlab = "Day", ylab = "R(t)", col = "red", ylim = c(min(c(min(Rt$Est_Rt, na.rm=T), min(Rt$Rt, na.rm = T))),
-															max(Rt$Est_Rt, na.rm=T)), lwd = 2)
-	lines(Rt$Est_Rt, col = "black", lwd=2)
-	legend("topright", legend = c("True R(t)", "Estimated R(t)"),
-	       col = c("red", "black"), lty=1, cex=0.9)
+		plot(Rt$Rt, type = "l", 
+			main = paste0("R(t) estimation, true distribution: ", 
+			params[['sim_type']]), xlab = "Day", ylab = "R(t)", 
+			col = "red", ylim = c(0, max(Rt$Est_Rt, na.rm=T)*1.5), lwd = 2)
+		lines(Rt$Est_Rt, col = "black", lwd=2)
+		legend("topright", legend = c("True R(t)", "Estimated R(t)"),
+		       col = c("red", "black"), lty=1, cex=0.9)
 	}
 }
 
