@@ -56,6 +56,9 @@ si_sim <- function(params) {
     ## get I(u)
     infec <- sum(I_p)
     data$infected[t] <- infec
+
+    # update total infected
+    data$I[t] <- data$I[t-1] + infec
   }
 
   # plot(data$infected, type='l')
@@ -83,12 +86,29 @@ si_plot <- function (model){
     col = c("blue", "orange"), pch = 16, bty = "n")
 }
 
+si_plot_detail <- function (model){
+  layout(matrix(c(rep(1,6), rep(2,3), rep(3,3)), nrow=4, ncol=3, byrow = T))
+  plot(x = model$days, y = model$S_pct, type="l", col = "blue", lwd=2,
+    ylim = c(0,1), ylab = "Susceptible and Infected Population", xlab="")
+  lines(x = model$days, y = model$I_pct, type = "l", col = "orange", lwd=2)
+  legend("topright", legend = c("Susceptible", "Infected"),
+    col = c("blue", "orange"), pch = 20, bty = "n")
+  plot(x = model$days, y = model$infected_day, type="l", lwd=2, col = "green",
+       ylab = "Infected", xlab = "")
+  legend("topright", legend = "New Infections", col="green", pch = 16, bty="n")
+  plot(x = model$days, y = model$R_val, type="l", lwd=2, col = "red",
+       ylab = "R(t)", xlab = "Days")
+  legend("topright", legend = "R(t)", col="red", pch = 16, bty="n")
+}
+
+
 # test
-#params[['delta']] <- 24
-#params[['n_days']] <- 300
-#params[['sim_type']] <- 'weibull'
-#si_model <- si_sim(params)
-#si_plot(si_model)
+params[['delta']] <- 24
+params[['n_days']] <- 300
+params[['sim_type']] <- 'weibull'
+si_model <- si_sim(params)
+si_plot(si_model)
+si_plot_detail(si_model)
 
 ############################## SII MODEL #######################################
 # do the same but add two different infected
@@ -261,14 +281,14 @@ ssii_sim <- function(params) {
 }
 
 ## Plot
-si_plot <- function (model){
-  plot(x = model$days, y = model$S1_pct, type="l", col = "blue", lwd=2, 
+sii_plot <- function (model){
+  plot(x = model$days, y = model$S1_pct, type="l", col = "blue", lwd=2,
     ylim = c(0,1), ylab = "Susceptible and Infected Population", xlab = "Days")
   lines(x = model$days, y = model$S2_pct, type = "l", col = "red", lwd=2)
   lines(x = model$days, y = model$I1_pct, type = "l", col = "orange", lwd=2)
   lines(x = model$days, y = model$I2_pct, type = "l", col = "green", lwd=2)
-  legend("topright", 
-    legend = c("Susceptible1", 'Susceptible2', "Infected1", "Infected2"), 
+  legend("topright",
+    legend = c("Susceptible1", 'Susceptible2', "Infected1", "Infected2"),
     col = c("blue", 'red', "orange", 'green'), pch = 16, bty = "n")
 }
 
