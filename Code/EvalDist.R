@@ -231,13 +231,29 @@ infections_plot <- function(incid){
 
 ### Compare estimate of Rt to its true value 
 
-compare_rt <- function(Rt){
+compare_rt <- function(Rt, params = NULL, variant = F){
+	start_variant <- params[['start_variant']]
+	n_days <- params[['n_days']]
+	if(variant){
+		Rt2 <- c(rep(NA, start_variant), Rt$Rt2[start_variant + 1:n_days])
+		plot(Rt$Rt1, type = "l", main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
+			 xlab = "Day", ylab = "R(t)", col = "red", ylim = c(min(c(min(Rt$Est_Rt, na.rm=T), min(Rt$Rt1, na.rm = T))),
+															max(Rt$Est_Rt, na.rm=T)), lwd = 2)
+		lines(Rt2, col = "orange", lwd=2)
+		lines(Rt$Est_Rt, col = "black", lwd=2)
+		abline(v = start_variant, lwd = 2, lty = "dotted")
+		legend("topright", legend = c("True R(t)", "True R(t) Variant", "Estimated R(t)"),
+	       col = c("red", "orange", "black"), lty=1, cex=0.9)
+	}
+
+	else{
 	plot(Rt$Rt, type = "l", main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
 		 xlab = "Day", ylab = "R(t)", col = "red", ylim = c(min(c(min(Rt$Est_Rt, na.rm=T), min(Rt$Rt, na.rm = T))),
 															max(Rt$Est_Rt, na.rm=T)), lwd = 2)
 	lines(Rt$Est_Rt, col = "black", lwd=2)
 	legend("topright", legend = c("True R(t)", "Estimated R(t)"),
 	       col = c("red", "black"), lty=1, cex=0.9)
+	}
 }
 
 

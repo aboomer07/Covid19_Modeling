@@ -165,6 +165,7 @@ sii_sim <- function(params) {
   daily_infec$S_pct <- daily_infec$S_daily / daily_infec$N
   daily_infec$I1_pct <- daily_infec$I1_cum / daily_infec$N
   daily_infec$I2_pct <- daily_infec$I2_cum / daily_infec$N
+  daily_infec$infected_day <- daily_infec$I1_daily + daily_infec$I2_daily
 
   return(daily_infec)
 }
