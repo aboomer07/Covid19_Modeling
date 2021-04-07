@@ -283,11 +283,13 @@ plot_nonpara_eval <- function(true_dist, est_dist) {
 ###############################################################
 #################### Estimate Rt ##############################
 ###############################################################
-Rt_est <- function(df, vals, type, params, deterministic = F, correct_bias = F, variant = F) {
+Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, variant = F) {
   n_days <- params[['n_days']]
   start <- params[['study_len']]
+  type <- params[['sim_type']]
   data <- data.frame(matrix(nrow = n_days, ncol = 5))
   names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt')
+
   if (variant){
     data$Rt1 <- rep(df$R1_val)
     data$Rt2 <- rep(df$R2_val)
