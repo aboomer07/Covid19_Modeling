@@ -113,15 +113,7 @@ png(file = paste0(outpath, "Outbreak_SI_var_weibull.png"))
 si_plot_detail(incid_si_weibull_var)
 dev.off()
 
-
-
-
-
-
-
 incid_sii <- sii_sim(params)
-
-
 
 # plot outbreak sii
 png(file = paste0(outpath, "Outbreak_SII_", params[['sim_type']], ".png"))
@@ -154,14 +146,9 @@ Rt3_nonpara_si <- Rt_est_nonpara(incid_si_weibull_const, samps, 'nsr', params, c
 Rt4_si_sto <- Rt_est(incid_si_weibull_var, vals, params, deterministic = F, correct_bias = T, variant = F)
 Rt4_nonpara_si <- Rt_est_nonpara(incid_si_weibull_var, samps, 'nsr', params, correct_bias = T)
 
-
-
-
-
 Rt_sii <- Rt_est(incid_sii, vals, params, deterministic = T, correct_bias = T, variant = T)
 
 Rt_nonpara_sii <- Rt_est_nonpara(incid_sii, samps, 'nsr', params, correct_bias = T, variant = T)
-
 
 # plot different sims and estimations
 # Model 1
@@ -208,17 +195,9 @@ png(file = paste0(outpath, "CompareRt4_SI_nonpara.png"))
 compare_rt(Rt4_nonpara_si, params)
 dev.off()
 
-
-
-
-
-
-
 png(file = paste0(outpath, "CompareRt_SI_", params[['sim_type']], ".png"))
 compare_rt(Rt_sii, params, variant = T)
 dev.off()
-
-
 
 png(file = paste0(outpath, "CompareRt_SII_nonpara", params[['sim_type']], ".png"))
 compare_rt(Rt_nonpara_sii, params, variant = T)
