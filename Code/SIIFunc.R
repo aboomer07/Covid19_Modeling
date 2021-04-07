@@ -187,8 +187,28 @@ sii_sim <- function(params) {
   return(daily_infec)
 }
 
-## Plot
-}
+sii_plot <- function (model, Rt){
+  layout(matrix(1:2, nrow=2))
+  plot(x = model$days, y = model$S_pct, type="l", col = "black", lwd=2,
+    ylim = c(0, 1), 
+    ylab = "Susceptible and Infected", xlab = "Days")
+  lines(x = model$days, y = model$I1_pct, col = "orange", lwd=2)
+  lines(x = model$days, y = model$I2_pct, col = "green", lwd=2)
+  # lines(x = model$days, y = model$I_pct, col='red', lwd=2)
+  legend("topright",
+    legend = c("Susceptible", "Infected1", "Infected2"),
+    col = c("black", "orange", 'green'), pch = 16, bty = "n")
+
+  plot(x = Rt$Date, y = Rt$Rt1, type="l", col = "black", lwd=2,
+    ylim = c(0, 3), ylab = "Rt", xlab = "Days")
+  lines(x = Rt$Date, y = Rt$Rt2, col = "orange", lwd=2)
+  lines(x = Rt$Date, y = Rt$Est_Rt, col = "blue", lwd=2)
+  lines(x = Rt$Date, y = Rt$Est_Rt1, col = "green", lwd=2)
+  lines(x = Rt$Date, y = Rt$Est_Rt2, col='red', lwd=2)
+  legend("topright",
+    legend = c("True Rt1", "True Rt2", "Est Rt Overall", 'Est Rt1', 'Est Rt2'),
+    col = c("black", "orange", 'blue', 'green', 'red'), pch = 16, bty = "n")
+ }
 
 
 ############################## SSII MODEL ######################################
