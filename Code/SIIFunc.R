@@ -37,7 +37,7 @@ si_sim <- function(params) {
     data$I[t] <- data$I[t-1] + data$infected[t]
   }
 
-  omega <- rev(gen_distribution(tau_m, sim_mu, sim_var, sim_type, delta))
+  omega <- rev(gen_distribution(tau_m, sim_mu, sim_var, sim_type, delta)$omega)
 
   # simulate outbreak
   start <- ((tau_m) * delta) + 1
@@ -52,7 +52,7 @@ si_sim <- function(params) {
     ## get omega(n*delta) I(t-n*delta) => total_infec (= All infected for a TSI from 1 until tau_m at all deltas)
     I_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$infected
     R_mean <- data$R_t[t] #mean(data$R_t[t])
-    I_p <- R_mean * omega$omega * I_vec * data$S[t] / data$N[t]
+    I_p <- R_mean * omega * I_vec * data$S[t] / data$N[t]
     ## get I(u)
     infec <- sum(I_p)
     data$infected[t] <- infec
@@ -237,18 +237,18 @@ ssii_sim <- function(params) {
   # start of the two pandemics (1 assumed to start in beginning, 2 is variable)
   data$I1[1:(tau_m * delta)] <- 5
   data[1:(start_variant * delta),]$I2 <- 0
-  data$I2[(start_variant * delta+1):(start_variant*delta + (tau_m * delta))] <- 5
+  data$I2[((start_variant * delta)+1):((start_variant + tau_m) * delta)] <- 5
 
-  data$S1[1] <- data$N[1] - data$I1[1]
-  data$S2[1] <- data$N[1] - data$I2[1]
-  for (t in 2:(tau_m * delta)){
-    data$S1[t] <- data$S1[t-1] - data$I1[t-1]
-    data$S2[t] <- data$S2[t-1] - data$I2[t-1]
+  data$S1[1] <- data$N[1]
+  data$S2[1] <- data$N[1]
+  for (t in 2:(tau_m * delta)) {
+    data$S1[t] <- data$S1[t-1] - data$I1[t-1] - data$I2[t-1]
+    data$S2[t] <- data$S2[t-1] - data$I2[t-1] - data$I1[t-1]
   }
 
   # get serial intervals
-  omega1 <- rev(gen_distribution(tau_m, sim_mu1, sim_var1, sim_type1, delta))
-  omega2 <- rev(gen_distribution(tau_m, sim_mu2, sim_var2, sim_type2, delta))
+  omega1 <- rev(gen_distribution(tau_m, sim_mu1, sim_var1, sim_type1, delta)$omega)
+  omega2 <- rev(gen_distribution(tau_m, sim_mu2, sim_var2, sim_type2, delta)$omega)
 
   # TODO Finish model
 
@@ -258,16 +258,17 @@ ssii_sim <- function(params) {
   for (t in start:dim(data)[1]) {
 
     # update susceptible
-    data$S1[t] <- data$S1[t-1] - data$I1[t-1]
+    data$S1[t] <- data$S1[t-1] - data$I1[t-1] - data$I2[t-1]
+    data$S2[t] <- data$S2[t-1] - data$I2[t-1] - data$I1[t-1]
     I1_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$I1
-    data$I1[t] <- data$R_t1[t] * sum(I1_vec * omega1$omega) * data$S1[t] / data$N[t]
+    data$I1[t] <- data$R_t1[t] * sum(I1_vec * omega1) * data$S1[t] / data$N[t]
 
-    if (t >= (start_variant * delta + 1)){
+    if (t >= (((start_variant + tau_m) * delta) + 1)){
       # update susceptible, substract both normal virus and variant
-      data$S2[t] <- data$S2[t-1] - data$I2[t-1] + (cross * data$I1[t-start])
-      data$S1[t] <- data$S1[t] + (cross * data$I2[t-start])
+      data$S2[t] <- data$S2[t-1] - data$I2[t-1] - data$I1[t-1] + (cross * data$I1[t-start+1])
+      data$S1[t] <- data$S1[t] - data$I2[t-1] + (cross * data$I2[t-start+1])
       I2_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$I2
-      data$I2[t] <- data$R_t2[t] * sum(I2_vec * omega2$omega) * data$S2[t] / data$N[t]
+      data$I2[t] <- data$R_t2[t] * sum(I2_vec * omega2) * data$S2[t] / data$N[t]
     }
   }
 
@@ -285,6 +286,7 @@ ssii_sim <- function(params) {
   daily_infec$S2_pct <- daily_infec$S2_daily / daily_infec$N
   daily_infec$I1_pct <- daily_infec$I1_cum / daily_infec$N
   daily_infec$I2_pct <- daily_infec$I2_cum / daily_infec$N
+  daily_infec$infected_day <- daily_infec$I1_daily + daily_infec$I2_daily
 
   return(daily_infec)
 }
@@ -300,3 +302,6 @@ sii_plot <- function (model){
     legend = c("Susceptible1", 'Susceptible2', "Infected1", "Infected2"),
     col = c("blue", 'red', "orange", 'green'), pch = 16, bty = "n")
 }
+
+
+
