@@ -58,29 +58,26 @@ SI_plot_distribution <- function(data){
 	#Show distribution of estimates 
 	pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, ".pdf"))
 	par(mfrow = c(2,2))
+
 	#Alpha hat 
 	hist(estimates$shape_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", alpha)))
 	abline(v = avg_shape_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
-	#abline(v = (avg_shape_hat-1.96*avg_shape_sd), lwd = 2, lty = "twodash", col = "blue")
-	#abline(v = (avg_shape_hat+1.96*avg_shape_sd), lwd = 2, lty = "twodash", col = "blue")
-	#abline(v = 6.25, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
 	   c(expression(paste("Mean ", hat(alpha)))),
 	   lty = c(1, 2, 1),  
 	   col = c("blue", "blue", "red"),
 	   cex = 0.75)
+
 	#Beta hat
 	hist(estimates$rate_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", beta)))
 	abline(v = avg_rate_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
-	#abline(v = (avg_rate_hat-1.96*avg_rate_sd), lwd = 2, lty = "twodash", col = "blue")
-	#abline(v = (avg_rate_hat+1.96*avg_rate_sd), lwd = 2, lty = "twodash", col = "blue")
-	#abline(v = 1.25, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
 		   c(expression(paste("Mean ", hat(beta)))), 
 		   lty = c(1, 2, 1),  
 		   col = c("blue", "blue", "red"),
+
 		   cex = 0.75)
 	#Implied mean
 	hist(estimates$mean_hat, nclass = 20, xlab = "", col = "aliceblue",
@@ -94,6 +91,7 @@ SI_plot_distribution <- function(data){
 		   lty = c(1, 6, 1),  
 		   col = c("blue", "blue", "red"),
 		   cex = 0.75)
+
 	#Implied variance
 	hist(estimates$var_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", sigma^2)))
@@ -106,6 +104,7 @@ SI_plot_distribution <- function(data){
 		   lty = c(1, 6, 1),  
 		   col = c("blue", "blue", "red"),
 		   cex = 0.75)
+
 	#Title
 	mtext(paste0("Number of simulations = ", simulations,
 	 	"\nSample size = ", num_people,
@@ -127,7 +126,6 @@ serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpar
 	if (!nonpara){
 		est <- dgamma(1:params$study_len, vals$shape, vals$rate)
 		df_e <- as.data.frame(est)
-
 	}
 
 	if (nonpara){
@@ -217,40 +215,36 @@ serial_est_plot_full <- function(params, nonpara = F, bw = NULL){
 infections_plot <- function(incid, params, variant=F, ssii=F){
 
 	if (variant) {
-		y_max <- max(max(incid$I1_daily), max(incid$I2_daily))
 		title <- paste0("New infections per day (", params$sim_type, ")")
 		if (ssii) {title <- paste0(title, " CrossOver = ", params$sii_cross)}
 
 		layout(matrix(1:2, ncol = 1, nrow =2))
-		plot(incid$I1_daily, type = "l", 
+		plot(incid$I1_pct, type = "l", 
 		main = title, xlab = "", ylab = "New infections",
-		ylim=c(0, 60000))
-		lines(incid$I2_daily, col='red')
+		ylim=params$infec_lim)
+		lines(incid$I2_pct, col='red')
 		legend('topleft',
 			legend=c("Original Strain", 'Variant'),
 			col=c("black", 'red'), lty=1, cex=0.9)
 		plot(incid$R1_val, type = "l", main = "Simulated R(t)", 
-		xlab = "Day", ylab = "R(t)", ylim = c(0, 2))
+		xlab = "Day", ylab = "R(t)", ylim = params$Rt_lim)
 		lines(incid$R2_val, main = "Simulated R(t) Variant", 
-		xlab = "Day", ylab = "R(t)", ylim = c(0, 2), col='red')
+		xlab = "Day", ylab = "R(t)", col='red')
 		legend('bottomleft',
 			legend=c("Original Strain", 'Variant'),
 			col=c("black", 'red'), lty=1, cex=0.9)
 	}
 	else {
 	layout(matrix(1:2, ncol = 1, nrow =2))
-	plot(incid$infected_day, type = "l", 
+	plot(incid$I_pct, type = "l", 
 		main = paste0("New infections per day (", params$sim_type, ")"),
-		xlab = "", ylab = "New infections")
+		xlab = "", ylab = "New infections", ylim=params$infec_lim)
 	plot(incid$R_val, type = "l", main = "Simulated R(t)", 
-		xlab = "Day", ylab = "R(t)", ylim = c(0, 2))
+		xlab = "Day", ylab = "R(t)", ylim = params$Rt_lim)
 	}
 }
 
-### Draw daily incidence of cases and corresponding Rt, given type of omega #
-
-# infections_plot(type = 'gamma')
-
+### Draw daily incidence of cases and corresponding Rt, given type of omega 
 ### Compare estimate of Rt to its true value 
 
 compare_rt <- function(Rt, params = NULL, variant = F){
@@ -258,12 +252,11 @@ compare_rt <- function(Rt, params = NULL, variant = F){
 	n_days <- params[['n_days']]
 
 	if(variant){
-		y_max <- max(max(Rt$Est_Rt, na.rm=T), max(Rt$Rt1), max(Rt$Rt2))
 		Rt2 <- c(rep(NA, start_variant), Rt$Rt2[start_variant + 1:n_days])
 		plot(Rt$Rt1, type = "l", 
 			main = paste0("R(t) estimation, true distribution: ", 
 			params[['sim_type']]), xlab = "Day", ylab = "R(t)", 
-			col = "red", ylim = c(0, y_max*1.2), lwd = 2)
+			col = "red", ylim = params$Rt_lim, lwd = 2)
 		lines(Rt2, col = "orange", lwd=2)
 		lines(Rt$Est_Rt, col = "black", lwd=2)
 		abline(v = start_variant, lwd = 2, lty = "dotted")
@@ -276,22 +269,10 @@ compare_rt <- function(Rt, params = NULL, variant = F){
 		plot(Rt$Rt, type = "l", 
 			main = paste0("R(t) estimation, true distribution: ", 
 			params[['sim_type']]), xlab = "Day", ylab = "R(t)", 
-			col = "red", ylim = c(0, max(Rt$Est_Rt, na.rm=T)*1.5), lwd = 2)
+			col = "red", ylim = params$Rt_lim, lwd = 2)
 		lines(Rt$Est_Rt, col = "black", lwd=2)
 		legend("topright", legend = c("True R(t)", "Estimated R(t)"),
 		       col = c("red", "black"), lty=1, cex=0.9)
 	}
 }
-
-
-# evaluate performance of non parametric estimator
-
-## sims is the number of simulations
-#R_val <- 1.3; study_len <- 15; num_people <- 40; sim_mu <- 6.6; sim_sig <- 1.1;
-#sim_type <- 'gamma'; delta <- 24; bw <- 'nsr'; sims <- 1000
-#
-#true_dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, 1)
-#
-#est_dist <- nonpara_eval(params, bw)
-#plot_nonpara_eval(true_dist, est_dist)
 
