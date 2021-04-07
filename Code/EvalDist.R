@@ -37,6 +37,10 @@ serial_hist_disc <- function (samps){
 ############## Serial Interval Simulation and Estimation Plot  ######################
 #####################################################################################
 
+study_len <- 25
+sim_mean <- 6.6
+sim_var <- 1.1
+
 #Always run this and manually change the parameters in the graph... 
 true_gamma <- gen_distribution(study_len, sim_mean, sim_var, "gamma", 1)
 
