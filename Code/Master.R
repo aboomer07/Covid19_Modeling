@@ -117,11 +117,10 @@ dev.off()
 png(file = paste0(outpath, "CompareRt_SII_nonpara", params[['sim_type']], ".png"))
 compare_rt(Rt_nonpara_sii, params, variant = T)
 dev.off()
+
 ######################################################################
 ##################### SI Framework ###################################
 ######################################################################
-
-params['R_val'] <- 0.9
 
 si_model <- si_sim(params)
 sii_model <- sii_sim(params)
