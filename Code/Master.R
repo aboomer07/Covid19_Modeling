@@ -22,7 +22,7 @@ serinfect <- samp_pois(params)
 # get discretized and "continuous" secondary cases
 samps <- serinfect$daily
 sampscont <- serinfect$samplescont
-dist <- serinfect$dist
+# dist <- serinfect$dist
 
 # plot serial interval simulation in continuous time
 pdf(file = paste0(outpath, "SerialHistCont_", params$sim_type, ".pdf"))
@@ -67,7 +67,7 @@ incid <- nour_sim_data(params) # important! must be same dist as in samp_pois
 
 incid <- si_sim(params)
 
-incid <- sii_sim(params)
+# incid <- sii_sim(params)
 
 # plot outbreak
 pdf(file = paste0(outpath, "Infections_", sim_type, ".pdf"))
@@ -79,7 +79,7 @@ dev.off()
 ##################### Estimate Rt ####################################
 ######################################################################
 
-Rt <- Rt_est(incid, vals, 'gamma', params, deterministic = F, correct_bias = T)
+Rt <- Rt_est(incid, vals, 'gamma', params, deterministic = T, correct_bias = F)
 
 Rt_nonpara <- Rt_est_nonpara(incid, samps, 'nsr', params)
 

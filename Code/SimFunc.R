@@ -303,10 +303,10 @@ Rt_est <- function(df, vals, type, params, deterministic = F, correct_bias = F) 
       else {
         t <- data[i,]$Date
 
-        dist <- rev(gen_distribution(t - 1, mean, var, type, 1))
+        omega <- rev(gen_distribution(t - 1, mean, var, type, 1)$omega)
         I <- df[which(df$days == t),]$infected_day
         I_window <- df[df$days %in% 1:(t - 1),]$infected_day
-        data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
+        data[i,]$Est_Rt <- (I) / (sum(I_window * omega))
       }
     }
   }
@@ -326,10 +326,10 @@ Rt_est <- function(df, vals, type, params, deterministic = F, correct_bias = F) 
         var <- vals$varhat
         t <- data[i,]$Date
 
-        dist <- rev(gen_distribution(t - 1, mean, var, type, 1))
+        omega <- rev(gen_distribution(t - 1, mean, var, type, 1)$omega)
         I <- df[which(df$days == t),]$infected_day
         I_window <- df[df$days %in% 1:(t - 1),]$infected_day
-        data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
+        data[i,]$Est_Rt <- (I) / (sum(I_window * omega))
       }
     }
   }
