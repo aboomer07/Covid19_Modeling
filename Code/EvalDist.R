@@ -23,7 +23,7 @@ serial_hist_cont <- function (sampscont, dist){
 # discretized serial interval histogram
 serial_hist_disc <- function (samps){
 	omegadaily <- gen_distribution(params$study_len, params$sim_mu, 
-		params$sim_var, params$sim_type, 1)
+		params$sim_var, params$sim_type, delta = 1)
 	hist(samps, breaks=seq(min(samps)-0.5, max(samps)+0.5, by=1), freq = F, 
 		col="lightblue", xlab = "Day", main = NULL)
 	lines(omegadaily$omega, lwd = 1.5)
@@ -39,11 +39,12 @@ serial_hist_disc <- function (samps){
 ############## Serial Interval Simulation and Estimation Plot  ######################
 #####################################################################################
 
-
-#Always run this and manually change the parameters in the graph... 
-true_gamma <- gen_distribution(params$study_len, params$sim_mean, params$sim_var, "gamma", 1)
-
 SI_plot_distribution <- function(data){
+
+	R_val <- params[['R_val']]; study_len <- params[['study_len']]
+  	num_people <- params[['num_people']]; sim_mu <- params[['sim_mu']]
+  	sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
+  	delta <- params[['delta']]; simulations <- params[['simulations']]
 
 	estimates <- data$distribution
 	avg_shape_hat <- data$avg_params[1]
@@ -56,17 +57,17 @@ SI_plot_distribution <- function(data){
 	avg_var_sd <- data$avg_params[8]
 
 	#Show distribution of estimates 
-	pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, ".pdf"))
+	pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, "_Delta", delta, ".pdf"))
 	par(mfrow = c(2,2))
 	#Alpha hat 
 	hist(estimates$shape_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", alpha)))
 	abline(v = avg_shape_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
-	#abline(v = (avg_shape_hat-1.96*avg_shape_sd), lwd = 2, lty = "twodash", col = "blue")
-	#abline(v = (avg_shape_hat+1.96*avg_shape_sd), lwd = 2, lty = "twodash", col = "blue")
+	abline(v = (avg_shape_hat-1.96*avg_shape_sd), lwd = 2, lty = "twodash", col = "blue")
+	abline(v = (avg_shape_hat+1.96*avg_shape_sd), lwd = 2, lty = "twodash", col = "blue")
 	#abline(v = 6.25, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
-	   c(expression(paste("Mean ", hat(alpha)))),
+	   c(expression(paste("Mean ", hat(alpha))), "Avg 95% CI"),
 	   lty = c(1, 2, 1),  
 	   col = c("blue", "blue", "red"),
 	   cex = 0.75)
@@ -74,11 +75,11 @@ SI_plot_distribution <- function(data){
 	hist(estimates$rate_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", beta)))
 	abline(v = avg_rate_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
-	#abline(v = (avg_rate_hat-1.96*avg_rate_sd), lwd = 2, lty = "twodash", col = "blue")
-	#abline(v = (avg_rate_hat+1.96*avg_rate_sd), lwd = 2, lty = "twodash", col = "blue")
+	abline(v = (avg_rate_hat-1.96*avg_rate_sd), lwd = 2, lty = "twodash", col = "blue")
+	abline(v = (avg_rate_hat+1.96*avg_rate_sd), lwd = 2, lty = "twodash", col = "blue")
 	#abline(v = 1.25, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
-		   c(expression(paste("Mean ", hat(beta)))), 
+		   c(expression(paste("Mean ", hat(beta))), "Avg 95% CI"), 
 		   lty = c(1, 2, 1),  
 		   col = c("blue", "blue", "red"),
 		   cex = 0.75)
@@ -86,33 +87,35 @@ SI_plot_distribution <- function(data){
 	hist(estimates$mean_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", mu)))
 	abline(v = avg_mean_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
-	abline(v = (avg_mean_hat-1.96*avg_mean_sd), lwd = 2, lty = "twodash", col = "blue")
-	abline(v = (avg_mean_hat+1.96*avg_mean_sd), lwd = 2, lty = "twodash", col = "blue")
+	#abline(v = (avg_mean_hat-1.96*avg_mean_sd), lwd = 2, lty = "twodash", col = "blue")
+	#abline(v = (avg_mean_hat+1.96*avg_mean_sd), lwd = 2, lty = "twodash", col = "blue")
 	abline(v = sim_mu, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
-		   c(expression(paste("Mean ", hat(mu))), "95% CI", expression(paste("True ", mu))),
-		   lty = c(1, 6, 1),  
-		   col = c("blue", "blue", "red"),
+		   c(expression(paste("Mean ", hat(mu))), expression(paste("True ", mu))),
+		   lty = c(1, 1),  
+		   col = c("blue", "red"),
 		   cex = 0.75)
 	#Implied variance
 	hist(estimates$var_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", sigma^2)))
 	abline(v = avg_var_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
-	abline(v = (avg_var_hat-1.96*avg_var_sd), lwd = 2, lty = "twodash", col = "blue")
-	abline(v = (avg_var_hat+1.96*avg_var_sd), lwd = 2, lty = "twodash", col = "blue")
-	abline(v = sim_sig, lwd = 2, lty = "solid", col = alpha("red", 0.7))
+	#abline(v = (avg_var_hat-1.96*avg_var_sd), lwd = 2, lty = "twodash", col = "blue")
+	#abline(v = (avg_var_hat+1.96*avg_var_sd), lwd = 2, lty = "twodash", col = "blue")
+	abline(v = sim_var, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
-		   c(expression(paste("Mean ", hat(sigma^2))), "95% CI", expression(paste("True ", sigma^2))),
-		   lty = c(1, 6, 1),  
-		   col = c("blue", "blue", "red"),
+		   c(expression(paste("Mean ", hat(sigma^2))), expression(paste("True ", sigma^2))),
+		   lty = c(1, 1),  
+		   col = c("blue", "red"),
 		   cex = 0.75)
 	#Title
 	mtext(paste0("Number of simulations = ", simulations,
 	 	"\nSample size = ", num_people,
-	 	"\nDiscretization = 1/", delta), side = 3, line = -3, outer = TRUE, cex = 0.7)
+	 	"\nDiscretization = 1/", delta,
+	 	"\nUnderlying distribution = ", sim_type), side = 3, line = -4, outer = TRUE, cex = 0.7)
 	mtext(paste0("Number of simulations = ", simulations, 
 		"\n Sample size = ", num_people,
-		"\nDiscretization = 1/", delta), side = 3, line = -24, outer = TRUE, cex = 0.7)
+		"\nDiscretization = 1/", delta,
+		"\nUnderlying distribution = ", sim_type), side = 3, line = -24, outer = TRUE, cex = 0.7)
 	dev.off()
 }
 

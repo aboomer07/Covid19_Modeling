@@ -237,7 +237,8 @@ params_distribution <- function(params) {
   avg_params$avg_var_hat <- mean(estimates$var_hat)
   avg_params$avg_var_sd <- mean(deltag[2])
 
-  estimates <- list(distribution = estimates, avg_params = avg_params)
+  estimates <- list(distribution = estimates, avg_params = avg_params, Vg = deltag)
+  return(estimates)
 
 }
 
