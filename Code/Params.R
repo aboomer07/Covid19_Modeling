@@ -4,7 +4,7 @@ params[['sim_var']] <- 2
 params[['study_len']] <- 20
 params[['num_people']] <- 30
 params[['simulations']] <- 1000
-params[['sim_type']] <- 'gamma'
+params[['sim_type']] <- 'weibull'
 params[['n_days']] <- 300
 params[['delta']] <- 24
 params[['n']] <- params[['tau_m']] * params[['delta']]

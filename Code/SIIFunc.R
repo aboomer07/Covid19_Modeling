@@ -85,7 +85,7 @@ si_plot <- function (model){
 
 # test
 params[['delta']] <- 24
-params[['n_days']] <- 100
+params[['n_days']] <- 300
 params[['sim_type']] <- 'weibull'
 si_model <- si_sim(params)
 si_plot(si_model)

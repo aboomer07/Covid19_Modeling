@@ -233,8 +233,8 @@ infections_plot <- function(incid){
 ### Compare estimate of Rt to its true value 
 
 compare_rt <- function(Rt){
-	plot(Rt$Rt, type = "l", main = paste0("R(t) estimation, true distribution: ", sim_type),
-		 xlab = "Day", ylab = "R(t)", col = "red", ylim = c(0, max(Rt$Est_Rt, na.rm=T)), lwd = 2)
+	plot(Rt$Rt, type = "l", main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
+		 xlab = "Day", ylab = "R(t)", col = "red", ylim = c(min(Rt$Est_Rt, na.rm=T), max(Rt$Est_Rt, na.rm=T)), lwd = 2)
 	lines(Rt$Est_Rt, col = "black", lwd=2)
 	legend("topright", legend = c("True R(t)", "Estimated R(t)"),
 	       col = c("red", "black"), lty=1, cex=0.9)
@@ -243,11 +243,11 @@ compare_rt <- function(Rt){
 
 # evaluate performance of non parametric estimator
 
-# sims is the number of simulations
-R_val <- 1.3; study_len <- 15; num_people <- 40; sim_mu <- 6.6; sim_sig <- 1.1;
-sim_type <- 'gamma'; delta <- 24; bw <- 'nsr'; sims <- 1000
-
-true_dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, 1)
-
-est_dist <- nonpara_eval(params, bw)
-plot_nonpara_eval(true_dist, est_dist)
+## sims is the number of simulations
+#R_val <- 1.3; study_len <- 15; num_people <- 40; sim_mu <- 6.6; sim_sig <- 1.1;
+#sim_type <- 'gamma'; delta <- 24; bw <- 'nsr'; sims <- 1000
+#
+#true_dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, 1)
+#
+#est_dist <- nonpara_eval(params, bw)
+#plot_nonpara_eval(true_dist, est_dist)

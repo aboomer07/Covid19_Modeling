@@ -5,9 +5,11 @@
 imppath <- paste0(getwd(), '/Code/Data/')
 outpath <- paste0(getwd(), '/Output/')
 
-source(paste0(getwd(), "/Code/Params.R")
+source(paste0(getwd(), "/Code/Params.R"))
 source(paste0(getwd(), "/Code/SimFunc.R"))
 source(paste0(getwd(), "/Code/EvalDist.R"))
+source(paste0(getwd(), "/Code/SIIFunc.R"))
+
 
 set.seed(14152118) #It spells Nour in numbers hihihi
 
@@ -54,35 +56,15 @@ pdf(file = paste0(outpath, "SerialEst_", sim_type, ".pdf"))
 serial_est_plot(study_len, sim_mean, sim_var, sim_type, vals)
 dev.off()
 
-### plots for meeting 26.03.2021 ###
-
-# 1. underlying: gamma, est: gamma
-png(file = paste0(outpath, "SerialEst_Gamma.png"))
-serial_est_plot_full(study_len, sim_mean = 6.6, sim_var = 1.1, sim_type = 'gamma', R_val = 1.6)
-dev.off()
-
-# 2. underlying: weibull, est: gamma
-png(file = paste0(outpath, "SerialEst_Weibull.png"))
-serial_est_plot_full(study_len, sim_mean, sim_var, sim_type, R_val = 1.6, nonpara = F)
-dev.off()
-
-# 3. underlying: gamma, est: non para, IQR
-png(file = paste0(outpath, "SerialEst_Gamma_IQR.png"))
-serial_est_plot_full(study_len, sim_mean = 6.6, sim_var = 1.1, sim_type = 'gamma', R_val = 1.6, nonpara = T, bw = 'iqr')
-dev.off()
-
-# 4. underlying: weibull, est: non para, IQR
-png(file = paste0(outpath, "SerialEst_Weibull_IQR.png"))
-serial_est_plot_full(study_len, sim_mean, sim_var, sim_type, R_val = 1.6, nonpara = T, bw = 'iqr')
-dev.off()
-
 
 
 ######################################################################
 ############## Simulate Incidence ####################################
 ######################################################################
 # simulate outbreak
-incid <- nour_sim_data(sim_mean, sim_var, sim_type, delta) # important! must be same dist as in samp_pois
+incid <- nour_sim_data(params) # important! must be same dist as in samp_pois
+
+incid <- si_sim(params)
 
 # plot outbreak
 pdf(file = paste0(outpath, "Infections_", sim_type, ".pdf"))
@@ -90,21 +72,20 @@ infections_plot(incid)
 dev.off()
 
 
-
 ######################################################################
 ##################### Estimate Rt ####################################
 ######################################################################
 
-Rt <- Rt_est(incid, vals, 'gamma')
+Rt <- Rt_est(incid, vals, 'weibull', params)
+
+Rt_nonpara <- Rt_est_nonpara(incid, samps, 'nsr', params)
 
 # plot
-pdf(file = paste0(outpath, "CompareRt_", sim_type, ".pdf"))
-compare_rt(Rt)
+png(file = paste0(outpath, "CompareRt_NonPara", params[['sim_type']], ".png"))
+compare_rt(Rt_nonpara)
 dev.off()
 
 MSE <- MSE_est(Rt)
-
-
 
 
 ################################################################################

@@ -281,8 +281,9 @@ plot_nonpara_eval <- function(true_dist, est_dist) {
 ###############################################################
 #################### Estimate Rt ##############################
 ###############################################################
-Rt_est <- function(df, vals, type) {
-  start <- 10
+Rt_est <- function(df, vals, type, params) {
+  n_days <- params[['n_days']]
+  start <- params[['study_len']]
   data <- data.frame(matrix(nrow = n_days, ncol = 5))
   names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt')
 
@@ -314,8 +315,9 @@ Rt_est <- function(df, vals, type) {
   return(data)
 }
 
-Rt_est_nonpara <- function(df, samps, bw) {
-  start <- 10
+Rt_est_nonpara <- function(df, samps, bw, params) {
+  start <- params[['study_len']]
+  n_days <- params[['n_days']]
   data <- data.frame(matrix(nrow = n_days, ncol = 3))
   names(data) <- c('Date', 'Rt', 'Est_Rt')
 
