@@ -5,41 +5,18 @@
 imppath <- paste0(getwd(), '/Code/Data/')
 outpath <- paste0(getwd(), '/Output/')
 
+source(paste0(getwd(), "/Code/Params.R")
 source(paste0(getwd(), "/Code/SimFunc.R"))
 source(paste0(getwd(), "/Code/EvalDist.R"))
 
-
-
-######################################################################
-####################### Set parameters ###############################
-######################################################################
-
-tau_m <-  11 # simulation window # TODO!! Needs to be the same as study_len?!
-R_val <- c(1.6, 0.9, 1.3) # incidence R
-n_days <- 180
-delta <- 24*4
-n <- tau_m*delta
-
-# parameters of the simulated distribution
-sim_mean <- 7
-sim_var <- 3
-study_len <- 20
-num_people <- 30
-simulations <- 1000
-sim_type <- "gamma"
 set.seed(14152118) #It spells Nour in numbers hihihi
-
-sim_mu <- sim_mean
-sim_sig <- sim_var
 
 ######################################################################
 ############## Simulate Serial Interval Data #########################
 ######################################################################
 
 # simulate serial interval study
-serinfect <- samp_pois(R_val = 1.6, study_len = study_len,
-					   num_people = num_people, sim_mu = sim_mean,
-					   sim_sig = sim_var, sim_type = sim_type, delta = delta)
+serinfect <- samp_pois(params)
 # get discretized and "continuous" secondary cases
 samps <- serinfect$daily
 sampscont <- serinfect$samplescont
@@ -60,11 +37,7 @@ dev.off()
 ######################################################################
 
 
-SI.simulation <- params_distribution(R_val = 1.6, study_len = study_len,
-					   num_people = num_people, sim_mu = sim_mean,
-					   sim_sig = sim_var, sim_type = sim_type, delta = delta, 
-					   sims = simulations)
-
+SI.simulation <- params_distribution(params)
 SI.plot <- SI_plot_distribution(data = SI.simulation)
 
 
