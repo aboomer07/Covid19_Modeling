@@ -278,12 +278,14 @@ plot_nonpara_distplot <- function(est_dist, plot_type, params){
   est_dist$X <- as.factor(est_dist$X)
   if (plot_type == 'ridge'){
     ggplot() +
-      geom_density_ridges_gradient(data = est_dist, aes(Y, X)) + theme_minimal() +
-      theme(
+      geom_density_ridges_gradient(data = est_dist, aes(Y, X),
+                                   scale = 3, rel_min_height = 0.01, size = 0.3) +
+      theme_ridges() + theme(
       legend.position="none",
       panel.spacing = unit(0.1, "lines"),
       strip.text.x = element_text(size = 8)) +
       geom_point(data = omega, aes(Y, X), color = 'green', shape = 5) +
+      xlim(0, 0.35) +
       coord_flip() +
       ylab('Days') + xlab('Estimated Y-values') +
       ggsave(paste0(outpath, 'SerialEst_nonpara_ridgeplot_', length(est_dist$X), '.png'), width = 10, height = 5)
