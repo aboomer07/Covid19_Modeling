@@ -13,12 +13,14 @@ library(msm)
 imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
 
+# source(paste0(getwd(), "/Code/Params.R")
+
 ###############################################################
 ############ Generate 'true' distribution #####################
 ###############################################################
 
 # helper function for gamma dist
-cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, rate = b)
+# cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, rate = b)
 
 gen_distribution <- function(k, mean, variance, type, delta) {
 
@@ -43,9 +45,6 @@ gen_distribution <- function(k, mean, variance, type, delta) {
     b <- (mean / variance) / delta
     # b <- 1/b
     print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    #omega <- k * cdf_gamma(k, a, b) + (k - 2) * cdf_gamma(k - 2, a, b) - 2 * (k - 1) * cdf_gamma(k - 1, a, b)
-    #omega <- omega + a * b * (2 * cdf_gamma(k - 1, a + 1, b) - cdf_gamma(k - 2, a + 1, b) - cdf_gamma(k, a + 1, b))
-    #omega <- sapply(omega, function(e) max(0, e))
     omega <- dgamma(k, a, b)
   }
 
@@ -63,13 +62,18 @@ gen_distribution <- function(k, mean, variance, type, delta) {
 ########### Simulate Serial Interval Data #####################
 ###############################################################
 
-samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, delta) {
+samp_pois <- function(params) {
+
+  R_val <- params[['R_val']]; study_len <- params[['study_len']]
+  num_people <- params[['num_people']]; sim_mu <- params[['sim_mu']]
+  sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
+  delta <- params[['delta']]
 
   Rt <- rep(R_val, each = (study_len*delta/length(R_val)))
   sims <- num_people
 
   # Generate Distribution for serial interval
-  omega <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, delta)
+  omega <- gen_distribution(study_len, sim_mu, sim_var, sim_type, delta)
   #Generate lambda parameter for the poisson draw
 	Lambda <- Rt * omega
 
@@ -131,7 +135,12 @@ serial_ests_nonpara <- function(samps, range, bandwidth) {
 ###############################################################
 ################ Simulate Incidence Data ######################
 ###############################################################
-nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m = window, R = R_val) {
+nour_sim_data <- function(params) {
+
+  R <- params[['R_val']]; sim_mu <- params[['sim_mu']]
+  sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
+  delta <- params[['delta']]; tau_m <- params[['tau_m']]
+  days <- params[['n_days']]
 
   data <- data.frame(matrix(nrow = days * delta, ncol = 4))
   colnames(data) <- c('t', 'days', 'R_t', 'infected')
@@ -168,16 +177,17 @@ nour_sim_data <- function(sim_mu, sim_var, sim_type, delta, days = n_days, tau_m
 #################### Simulate several times to get distribution ####################
 ####################################################################################
 
-params_distribution <- function(R_val, study_len, num_people, sim_mu,
-  sim_sig, sim_type, delta, sims) {
+params_distribution <- function(params) {
 
-  simulations <- sims
+  R_val <- params[['R_val']]; study_len <- params[['study_len']]
+  num_people <- params[['num_people']]; sim_mu <- params[['sim_mu']]
+  sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
+  delta <- params[['delta']]; simulations <- params[['simulations']]
+
   estimates <- data.frame(ncol = 4, nrow = simulations)
 
   for (i in 1:simulations){
-    serinfect <- samp_pois(R_val = R_val, study_len = study_len,
-              num_people = num_people, sim_mu = sim_mu,
-              sim_sig = sim_sig, sim_type = sim_type, delta = delta)
+    serinfect <- samp_pois(params)
     vals <- serial_ests(serinfect$daily) # here we obtain the params for Rt_est
     print(i)
     estimates[i, 1] <- vals$shape
@@ -230,15 +240,17 @@ params_distribution <- function(R_val, study_len, num_people, sim_mu,
 }
 
 
-nonpara_eval <- function(R_val, study_len, num_people, sim_mu,
-  sim_sig, sim_type, delta, sims, bw){
+nonpara_eval <- function(params, bw){
+
+  R_val <- params[['R_val']]; study_len <- params[['study_len']]
+  num_people <- params[['num_people']]; sim_mu <- params[['sim_mu']]
+  sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
+  delta <- params[['delta']]; simulations <- params[['simulations']]
 
   simulations <- list()
   for (i in 1:sims){
     simulation <- data.frame(matrix(ncol = 4, nrow = study_len))
-    serinfect <- samp_pois(R_val = R_val, study_len = study_len,
-              num_people = num_people, sim_mu = sim_mu,
-              sim_sig = sim_sig, sim_type = sim_type, delta = delta)
+    serinfect <- samp_pois(params)
 
     out <- serial_ests_nonpara(serinfect$daily, range = c(1, study_len), bandwidth = bw)
 
