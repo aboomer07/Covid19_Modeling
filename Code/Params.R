@@ -16,4 +16,6 @@ params[['sim_var_variant']] <- 2
 params[['sim_type_variant']] <- 'gamma'
 params[['tau_m']] <- params[['study_len']]
 params[['start_variant']] <- 50
-params[['sii_cross']] <- 0.1
+params[['sii_cross']] <- 0
+params[['infec_lim']] <- c(0, 1)
+params[['Rt_lim']] <- c(0, 3)
