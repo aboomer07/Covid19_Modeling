@@ -22,7 +22,7 @@ serinfect <- samp_pois(params)
 # get discretized and "continuous" secondary cases
 samps <- serinfect$daily
 sampscont <- serinfect$samplescont
-# dist <- serinfect$dist
+
 
 # plot serial interval simulation in continuous time
 pdf(file = paste0(outpath, "SerialHistCont_", params$sim_type, ".pdf"))
@@ -71,33 +71,52 @@ true_dist <- gen_distribution(params[['study_len']], params[['sim_mu']], params[
 plot_nonpara_eval(true_dist, nonpar_sim)
 
 
-
 ######################################################################
 ############## Simulate Incidence ####################################
 ######################################################################
+# first with constant Rt
 # simulate outbreak
-# incid <- nour_sim_data(params) # important! must be same dist as in samp_pois
+incid_si <- si_sim(params)
+incid_sii <- sii_sim(params)
 
-incid <- si_sim(params)
-
-# plot outbreak
-pdf(file = paste0(outpath, "Infections_", params[['sim_type']], ".pdf"))
-infections_plot(incid, params)
+# plot outbreak si
+png(file = paste0(outpath, "Outbreak_SI_", params[['sim_type']], ".png"))
+si_plot_detail(incid_si)
 dev.off()
+
+# plot outbreak sii
+png(file = paste0(outpath, "Outbreak_SII_", params[['sim_type']], ".png"))
+sii_plot(incid_sii)
+dev.off()
+
 
 ######################################################################
 ##################### Estimate Rt ####################################
 ######################################################################
 
-Rt <- Rt_est(incid, vals, params, deterministic = T, correct_bias = T, variant = T)
+Rt_si <- Rt_est(incid_si, vals, params, deterministic = T, correct_bias = T, variant = F)
+Rt_sii <- Rt_est(incid_sii, vals, params, deterministic = T, correct_bias = T, variant = T)
 
-Rt_nonpara <- Rt_est_nonpara(incid, samps, 'nsr', params)
+Rt_nonpara_si <- Rt_est_nonpara(incid_si, samps, 'nsr', params, correct_bias = T)
+Rt_nonpara_sii <- Rt_est_nonpara(incid_sii, samps, 'nsr', params, correct_bias = T, variant = T)
 
-# plot
-png(file = paste0(outpath, "CompareRt_Variant", params[['sim_type']], ".png"))
-compare_rt(Rt, params, variant = F)
+
+# plot different sims and estimations
+png(file = paste0(outpath, "CompareRt_SI_", params[['sim_type']], ".png"))
+compare_rt(Rt_si, params)
 dev.off()
 
+png(file = paste0(outpath, "CompareRt_SI_", params[['sim_type']], ".png"))
+compare_rt(Rt_sii, params, variant = T)
+dev.off()
+
+png(file = paste0(outpath, "CompareRt_SI_nonpara", params[['sim_type']], ".png"))
+compare_rt(Rt_nonpara_si, params)
+dev.off()
+
+png(file = paste0(outpath, "CompareRt_SII_nonpara", params[['sim_type']], ".png"))
+compare_rt(Rt_nonpara_sii, params, variant = T)
+dev.off()
 ######################################################################
 ##################### SI Framework ###################################
 ######################################################################
@@ -116,87 +135,5 @@ si_plot(si_model, Rt_si)
 png(paste0(outpath, "/SII_Plot.png"))
 sii_plot(sii_model, Rt_sii)
 dev.off()
-
-################################################################################
-#Plot the estimated R's vs. the Simulated R
-################################################################################
-
-# MSE <- MSE_est(Rt)
-
-# Rt_plot <- Rt %>%
-# 	group_by(est_a, est_b) %>%
-# 	mutate(id = cur_group_id()) %>%
-# 	group_by(Date) %>%
-# 	mutate(R_max = max(Est_Rt),
-# 	       R_min = min(Est_Rt))
-
-# ggplot() +
-# 	geom_line(data = Rt_plot, aes(x = Date, y=Est_Rt, group=id), alpha=0.3) +
-# 	geom_line(data = Rt_plot, aes(x=Date, y=Rt), color = "red", size=1) +
-# 	scale_color_brewer(palette="Dark2") +
-# 	theme_minimal()
-
-
-# ggplot() +
-# 	geom_ribbon(data = Rt_plot, 
-# 		aes(x=Date, ymin = R_min, ymax = R_max), alpha=0.6) +
-# 	geom_line(data = Rt_plot, aes(x=Date, y=Rt), color = "red", size=1) +
-# 	scale_fill_brewer(palette="Dark2") +
-# 	theme_minimal() +
-# 	ggsave("Rt_Est.png")
-
-# ################################################################################
-# #Plot the MSE vs. the Mean and Standard Dev
-# ################################################################################
-
-# test <- MSE_mat
-
-# test$dev_a <- (test$est_a - test$True_est_a) / test$True_est_a
-# test$dev_b <- (test$est_b - test$True_est_b) / test$True_est_b
-
-# test$b_group <-as.factor(test$dev_b)
-# test$a_group <-as.factor(test$dev_a)
-
-# testLine <- test %>%
-#   group_by(est_type) %>%
-#   summarize(True_est_a = mean(True_est_a), True_est_b = mean(True_est_b))
-
-
-# a_gam <- ggplot(data=test[test$est_type == 'gamma',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
-# 	geom_line() + 
-# 	scale_color_brewer(palette="Dark2") +
-# 	ggsave("Gamma_MSE.png")
-
-# a_wei <- ggplot(data=test[test$est_type == 'weibull',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
-# 	geom_line() + 
-# 	scale_color_brewer(palette="Dark2") +
-# 	ggsave("Weibull_MSE.png")
-
-# a_norm <- ggplot(data=test[test$est_type == 'norm',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
-# 	geom_line() + 
-# 	scale_color_brewer(palette="Dark2") +
-# 	ggsave("Norm_MSE.png")
-
-# a_lnorm <- ggplot(data=test[test$est_type == 'lnorm',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
-# 	geom_line() + 
-# 	scale_color_brewer(palette="Dark2") +
-# 	ggsave("LNorm_MSE.png")
-
-# est_b <- 
-#   # ggplot(data=test, aes(x=est_a, y=MSE)) +
-#   ggplot(data=test[test$est_type == 'gamma',], aes(x=dev_a, y=MSE, group=b_group, color=b_group)) +
-#   geom_line()+ 
-#   # facet_grid(~ est_type, scales='free')+ 
-#   # geom_vline(data=testLine[testLine$est_type == 'gamma', ], aes(xintercept = True_est_a), linetype="dotted") +
-#   scale_color_brewer(palette="Dark2")
-# est_b
-
-# est_a <- test %>%
-#   ggplot( aes(x=est_b, y=MSE, group=est_a, color=est_a)) +
-#   geom_line()+ 
-#   facet_grid(~ est_type)+ 
-#   geom_vline(data=testLine, aes(xintercept=est_b))+
-#   scale_color_brewer(palette="Dark2")
-# est_a
 
 
