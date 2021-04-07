@@ -33,7 +33,7 @@ si_sim <- function(params) {
   for (t in 2:(tau_m * delta)){
     data$S[t] <- data$S[t-1] - data$infected[t-1]
     # data$infected[t] <- sum(data$infected[1:t-1]) * R / (delta*2)
-    data$infected[t] <- 10/delta
+    data$infected[t] <- 5
     data$I[t] <- data$I[t-1] + data$infected[t]
   }
 
@@ -103,12 +103,12 @@ si_plot_detail <- function (model){
 
 
 # test
-params[['delta']] <- 24
-params[['n_days']] <- 300
-params[['sim_type']] <- 'weibull'
-si_model <- si_sim(params)
-si_plot(si_model)
-si_plot_detail(si_model)
+#params[['delta']] <- 24
+#params[['n_days']] <- 300
+#params[['sim_type']] <- 'weibull'
+#si_model <- si_sim(params)
+#si_plot(si_model)
+#si_plot_detail(si_model)
 
 ############################## SII MODEL #######################################
 # do the same but add two different infected
@@ -189,26 +189,26 @@ sii_sim <- function(params) {
 }
 
 ## Plot
-si_plot <- function (model){
+sii_plot <- function (model){
   plot(x = model$days, y = model$S_pct, type="l", col = "blue", lwd=2,
     ylim = c(0,1), ylab = "Susceptible and Infected Population", xlab = "Days")
   lines(x = model$days, y = model$I1_pct, type = "l", col = "orange", lwd=2)
   lines(x = model$days, y = model$I2_pct, type = "l", col = "green", lwd=2)
   legend("topright",
     legend = c("Susceptible1", "Infected1", "Infected2"),
-    col = c("blue", 'red', "orange", 'green'), pch = 16, bty = "n")
+    col = c("blue", 'orange', "green"), pch = 16, bty = "n")
 }
 
-# test
-params[['R_val']] <- 1.5
-params[['R_val_variant']] <- 1.9
-params[['sim_type']] <- 'gamma'
-params[['sim_type_variant']] <- 'gamma'
-params[['start_variant']] <- 50
-params[['n_days']] <- 150
+## test
+#params[['R_val']] <- 1.5
+#params[['R_val_variant']] <- 1.9
+#params[['sim_type']] <- 'gamma'
+#params[['sim_type_variant']] <- 'gamma'
+#params[['start_variant']] <- 50
+#params[['n_days']] <- 150
 
-si_model <- sii_sim(params)
-si_plot(si_model)
+#si_model <- sii_sim(params)
+#si_plot(si_model)
 
 ############################## SSII MODEL ######################################
 # do the same but add two different infected + different susceptibility groups

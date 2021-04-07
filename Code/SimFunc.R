@@ -382,14 +382,22 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
   return(data)
 }
 
-Rt_est_nonpara <- function(df, samps, bw, params, correct_bias = F) {
+Rt_est_nonpara <- function(df, samps, bw, params, correct_bias = F, variant = F) {
   start <- params[['study_len']]
   n_days <- params[['n_days']]
   data <- data.frame(matrix(nrow = n_days, ncol = 3))
   names(data) <- c('Date', 'Rt', 'Est_Rt')
 
   data$Date <- rep(1:n_days)
-  data$Rt <- rep(df['R_val'][[1]])
+
+  if (variant){
+    data$Rt1 <- rep(df$R1_val)
+    data$Rt2 <- rep(df$R2_val)
+  }
+
+  else{
+    data$Rt <- rep(df['R_val'][[1]])
+  }
 
   for (i in start:nrow(data)) {
     if (data[i,]$Date <= start) {
