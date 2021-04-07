@@ -51,7 +51,7 @@ gen_distribution <- function(k, mean, variance, type, delta) {
 
   if (type == 'weibull') {
     a <- as.numeric(weibullpar(mean, variance)[1])
-    b <- as.numeric(weibullpar(mean, variance)[2]) * delta
+    b <- as.numeric(weibullpar(mean, variance)[2])*delta
     print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dweibull(k, a, b)
   }
@@ -80,7 +80,7 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
 
   # Make infections daily
   daily <- c()
-  day <- seq(1, study_len*delta, delta)
+  day <- seq(1, study_len*delta+2, delta)
   
   for (d in 1:length(day)) {
     for (i in 1:length(samplescont)) {
@@ -94,7 +94,7 @@ samp_pois <- function(R_val, study_len, num_people, sim_mu, sim_sig, sim_type, d
   serinfect <- list(samplescont = samplescont, daily = daily, dist = omega)
   return(serinfect)
 }
-
+ 
 ###############################################################
 ################ Estimate Serial Interval #####################
 ###############################################################
@@ -229,18 +229,55 @@ params_distribution <- function(R_val, study_len, num_people, sim_mu,
 
 }
 
+
+nonpara_eval <- function(R_val, study_len, num_people, sim_mu,
+  sim_sig, sim_type, delta, sims, bw){
+
+  simulations <- list()
+  for (i in 1:sims){
+    simulation <- data.frame(matrix(ncol = 4, nrow = study_len))
+    serinfect <- samp_pois(R_val = R_val, study_len = study_len,
+              num_people = num_people, sim_mu = sim_mu,
+              sim_sig = sim_sig, sim_type = sim_type, delta = delta)
+
+    out <- serial_ests_nonpara(serinfect$daily, range = c(1, study_len), bandwidth = bw)
+
+    simulation[ ,1] <- out$x
+    simulation[, 2] <- out$y
+    simulation[, 3] <- i
+    simulation[, 4] <- bw
+    simulations[[i]] <- simulation
+  }
+  full <- do.call('rbind', simulations)
+  colnames(full) <- c('X', 'Y', 'Sim', 'Bandwidth')
+  return(full)
+}
+
+
+plot_nonpara_eval <- function(true_dist, est_dist) {
+  conf <- est_dist %>% group_by(X) %>%
+    summarise(upper = max(Y),
+              lower = min(Y))
+  png(paste0(outpath, 'SerialEst_nonpara_', length(est_dist$X), '.png'))
+  plot(true_dist, type = 'l', ylim=c(0,max(conf$upper)))
+  lines(conf$lower, lty = "dotted", col = "blue")
+  lines(conf$upper, lty = "dotted", col = "blue")
+  dev.off()
+}
+
+
 ###############################################################
 #################### Estimate Rt ##############################
 ###############################################################
 Rt_est <- function(df, vals, type) {
   start <- 10
-  data <- data.frame(matrix(nrow = n_days * nrow(vals), ncol = 5))
+  data <- data.frame(matrix(nrow = n_days, ncol = 5))
   names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt')
 
-  data$Date <- rep(1:n_days, nrow(vals))
-  data$est_a <- rep(vals$shape, each = n_days)
-  data$est_b <- rep(vals$rate, each = n_days)
-  data$Rt <- rep(df['R_val'][[1]], nrow(vals))
+  data$Date <- seq(1, n_days)
+  data$est_a <- rep(vals$shape, n_days)
+  data$est_b <- rep(vals$rate, n_days)
+  data$Rt <- rep(df$R_val)
   #data$True_est_a <- rep(vals[, 3], each = n_days)
   #data$True_est_b <- rep(vals[, 4], each = n_days)
 
@@ -249,10 +286,10 @@ Rt_est <- function(df, vals, type) {
       data[i,]$Est_Rt <- NA
     }
     else {
-      a <- data[i,]$est_a
-      b <- data[i,]$est_b
-      mean <- a/b
-      var <- a/(b^2)
+      #a <- data[i,]$est_a
+      #b <- data[i,]$est_b
+      mean <- vals$meanhat
+      var <- vals$varhat
       t <- data[i,]$Date
 
       dist <- rev(gen_distribution(t - 1, mean, var, type, 1))

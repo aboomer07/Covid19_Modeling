@@ -60,52 +60,60 @@ SI_plot_distribution <- function(data){
 	pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, ".pdf"))
 	par(mfrow = c(2,2))
 	#Alpha hat 
-	hist(estimates$shape_hat, nclass = 20, xlab = "", 
+	hist(estimates$shape_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", alpha)))
-	abline(v = avg_shape_hat, lwd = 2, lty = "solid", col = "blue")
-	abline(v = (avg_shape_hat-1.96*avg_shape_sd), lwd = 1, lty = "dotted", col = "blue")
-	abline(v = (avg_shape_hat+1.96*avg_shape_sd), lwd = 1, lty = "dotted", col = "blue")
-	abline(v = 24.5, lwd = 2, lty = "solid", col = "red")
+	abline(v = avg_shape_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
+	#abline(v = (avg_shape_hat-1.96*avg_shape_sd), lwd = 2, lty = "twodash", col = "blue")
+	#abline(v = (avg_shape_hat+1.96*avg_shape_sd), lwd = 2, lty = "twodash", col = "blue")
+	#abline(v = 6.25, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
-	   c(expression(paste("Mean ", hat(alpha))), "95% CI", expression(paste("True ", alpha))),
+	   c(expression(paste("Mean ", hat(alpha)))),
 	   lty = c(1, 2, 1),  
-	   col = c("blue", "blue", "red"))
+	   col = c("blue", "blue", "red"),
+	   cex = 0.75)
 	#Beta hat
-	hist(estimates$rate_hat, nclass = 20, xlab = "", 
+	hist(estimates$rate_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", beta)))
-	abline(v = avg_rate_hat, lwd = 2, lty = "solid", col = "blue")
-	abline(v = (avg_rate_hat-1.96*avg_rate_sd), lwd = 1, lty = "dotted", col = "blue")
-	abline(v = (avg_rate_hat+1.96*avg_rate_sd), lwd = 1, lty = "dotted", col = "blue")
-	abline(v = 3.5, lwd = 2, lty = "solid", col = "red")
+	abline(v = avg_rate_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
+	#abline(v = (avg_rate_hat-1.96*avg_rate_sd), lwd = 2, lty = "twodash", col = "blue")
+	#abline(v = (avg_rate_hat+1.96*avg_rate_sd), lwd = 2, lty = "twodash", col = "blue")
+	#abline(v = 1.25, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
-		   c(expression(paste("Mean ", hat(beta))), "95% CI", expression(paste("True ", beta))),
+		   c(expression(paste("Mean ", hat(beta)))), 
 		   lty = c(1, 2, 1),  
-		   col = c("blue", "blue", "red"))
+		   col = c("blue", "blue", "red"),
+		   cex = 0.75)
 	#Implied mean
-	hist(estimates$mean_hat, nclass = 20, xlab = "", 
+	hist(estimates$mean_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", mu)))
-	abline(v = avg_mean_hat, lwd = 2, lty = "solid", col = "blue")
-	abline(v = (avg_mean_hat-1.96*avg_mean_sd), lwd = 1, lty = "dotted", col = "blue")
-	abline(v = (avg_mean_hat+1.96*avg_mean_sd), lwd = 1, lty = "dotted", col = "blue")
-	abline(v = 7, lwd = 2, lty = "solid", col = "red")
+	abline(v = avg_mean_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
+	abline(v = (avg_mean_hat-1.96*avg_mean_sd), lwd = 2, lty = "twodash", col = "blue")
+	abline(v = (avg_mean_hat+1.96*avg_mean_sd), lwd = 2, lty = "twodash", col = "blue")
+	abline(v = sim_mu, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
 		   c(expression(paste("Mean ", hat(mu))), "95% CI", expression(paste("True ", mu))),
-		   lty = c(1, 2, 1),  
-		   col = c("blue", "blue", "red"))
+		   lty = c(1, 6, 1),  
+		   col = c("blue", "blue", "red"),
+		   cex = 0.75)
 	#Implied variance
-	hist(estimates$var_hat, nclass = 20, xlab = "", 
+	hist(estimates$var_hat, nclass = 20, xlab = "", col = "aliceblue",
 		main = expression(paste("Estimated ", sigma^2)))
-	abline(v = avg_var_hat, lwd = 2, lty = "solid", col = "blue")
-	abline(v = (avg_var_hat-1.96*avg_var_sd), lwd = 1, lty = "dotted", col = "blue")
-	abline(v = (avg_var_hat+1.96*avg_var_sd), lwd = 1, lty = "dotted", col = "blue")
-	abline(v = 2, lwd = 2, lty = "solid", col = "red")
+	abline(v = avg_var_hat, lwd = 2, lty = "solid", col = alpha("blue", 0.7))
+	abline(v = (avg_var_hat-1.96*avg_var_sd), lwd = 2, lty = "twodash", col = "blue")
+	abline(v = (avg_var_hat+1.96*avg_var_sd), lwd = 2, lty = "twodash", col = "blue")
+	abline(v = sim_sig, lwd = 2, lty = "solid", col = alpha("red", 0.7))
 	legend("topright", 
 		   c(expression(paste("Mean ", hat(sigma^2))), "95% CI", expression(paste("True ", sigma^2))),
-		   lty = c(1, 2, 1),  
-		   col = c("blue", "blue", "red"))
+		   lty = c(1, 6, 1),  
+		   col = c("blue", "blue", "red"),
+		   cex = 0.75)
 	#Title
-	mtext(paste0("Sample size = ", simulations), side = 3, line = -3, outer = TRUE)
-	mtext(paste0("Sample size = ", simulations), side = 3, line = -24, outer = TRUE)
+	mtext(paste0("Number of simulations = ", simulations,
+	 	"\nSample size = ", num_people,
+	 	"\nDiscretization = 1/", delta), side = 3, line = -3, outer = TRUE, cex = 0.7)
+	mtext(paste0("Number of simulations = ", simulations, 
+		"\n Sample size = ", num_people,
+		"\nDiscretization = 1/", delta), side = 3, line = -24, outer = TRUE, cex = 0.7)
 	dev.off()
 }
 
@@ -236,6 +244,19 @@ compare_rt <- function(Rt){
 	       col = c("red", "black"), lty=1, cex=0.9)
 }
 
+
+# evaluate performance of non parametric estimator
+
+# sims is the number of simulations
+R_val <- 1.3; study_len <- 15; num_people <- 40; sim_mu <- 6.6; sim_sig <- 1.1;
+sim_type <- 'gamma'; delta <- 24; bw <- 'nsr'; sims <- 1000
+
+true_dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, 1)
+
+est_dist <- nonpara_eval(R_val, study_len, num_people, sim_mu,
+  sim_sig, sim_type, delta, sims, bw)
+
+plot_nonpara_eval(true_dist, est_dist)
 
 
 
