@@ -98,6 +98,7 @@ si_plot_detail <- function (model){
   plot(x = model$days, y = model$R_val, type="l", lwd=2, col = "red",
        ylim=c(0, 3), ylab = "R(t)", xlab = "Days")
   legend("topright", legend = "R(t)", col="red", pch = 16, bty="n")
+  layout(matrix(1, nrow=1, ncol=1, byrow = T))
 }
 
 
