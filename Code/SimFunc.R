@@ -281,41 +281,63 @@ plot_nonpara_eval <- function(true_dist, est_dist) {
 ###############################################################
 #################### Estimate Rt ##############################
 ###############################################################
-Rt_est <- function(df, vals, type, params) {
+Rt_est <- function(df, vals, type, params, deterministic = F, correct_bias = F) {
   n_days <- params[['n_days']]
   start <- params[['study_len']]
   data <- data.frame(matrix(nrow = n_days, ncol = 5))
   names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt')
 
-  data$Date <- seq(1, n_days)
-  data$est_a <- rep(vals$shape, n_days)
-  data$est_b <- rep(vals$rate, n_days)
   data$Rt <- rep(df$R_val)
-  #data$True_est_a <- rep(vals[, 3], each = n_days)
-  #data$True_est_b <- rep(vals[, 4], each = n_days)
+  data$Date <- seq(1, n_days)
 
-  for (i in start:nrow(data)) {
-    if (data[i,]$Date <= start) {
-      data[i,]$Est_Rt <- NA
-    }
-    else {
-      #a <- data[i,]$est_a
-      #b <- data[i,]$est_b
-      mean <- vals$meanhat
-      var <- vals$varhat
-      t <- data[i,]$Date
+  if (deterministic){
+    mean <- params[['sim_mu']]
+    var <- params[['sim_var']]
 
-      dist <- rev(gen_distribution(t - 1, mean, var, type, 1))
-      I <- df[which(df$days == t),]$infected_day
-      I_window <- df[df$days %in% 1:(t - 1),]$infected_day
-      data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
+    for (i in start:nrow(data)) {
+      if (data[i,]$Date <= start) {
+        data[i,]$Est_Rt <- NA
+      }
+      else {
+        t <- data[i,]$Date
+
+        dist <- rev(gen_distribution(t - 1, mean, var, type, 1))
+        I <- df[which(df$days == t),]$infected_day
+        I_window <- df[df$days %in% 1:(t - 1),]$infected_day
+        data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
+      }
     }
   }
 
+  else{
+    data$est_a <- rep(vals$shape, n_days)
+    data$est_b <- rep(vals$rate, n_days)
+
+    for (i in start:nrow(data)) {
+      if (data[i,]$Date <= start) {
+        data[i,]$Est_Rt <- NA
+      }
+      else {
+        #a <- data[i,]$est_a
+        #b <- data[i,]$est_b
+        mean <- vals$meanhat
+        var <- vals$varhat
+        t <- data[i,]$Date
+
+        dist <- rev(gen_distribution(t - 1, mean, var, type, 1))
+        I <- df[which(df$days == t),]$infected_day
+        I_window <- df[df$days %in% 1:(t - 1),]$infected_day
+        data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
+      }
+    }
+  }
+  if (correct_bias){
+    data$Est_Rt <- data$Est_Rt * 1/df$S_pct
+  }
   return(data)
 }
 
-Rt_est_nonpara <- function(df, samps, bw, params) {
+Rt_est_nonpara <- function(df, samps, bw, params, correct_bias = F) {
   start <- params[['study_len']]
   n_days <- params[['n_days']]
   data <- data.frame(matrix(nrow = n_days, ncol = 3))
@@ -336,6 +358,9 @@ Rt_est_nonpara <- function(df, samps, bw, params) {
       I_window <- df[df$days %in% 1:(t - 1),]$infected_day
       data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
     }
+  }
+  if (correct_bias){
+    data$Est_Rt <- data$Est_Rt * 1/df$S_pct
   }
   return(data)
 }

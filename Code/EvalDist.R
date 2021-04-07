@@ -234,7 +234,8 @@ infections_plot <- function(incid){
 
 compare_rt <- function(Rt){
 	plot(Rt$Rt, type = "l", main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
-		 xlab = "Day", ylab = "R(t)", col = "red", ylim = c(min(Rt$Est_Rt, na.rm=T), max(Rt$Est_Rt, na.rm=T)), lwd = 2)
+		 xlab = "Day", ylab = "R(t)", col = "red", ylim = c(min(c(min(Rt$Est_Rt, na.rm=T), min(Rt$Rt, na.rm = T))),
+															max(Rt$Est_Rt, na.rm=T)), lwd = 2)
 	lines(Rt$Est_Rt, col = "black", lwd=2)
 	legend("topright", legend = c("True R(t)", "Estimated R(t)"),
 	       col = c("red", "black"), lty=1, cex=0.9)
@@ -251,3 +252,4 @@ compare_rt <- function(Rt){
 #
 #est_dist <- nonpara_eval(params, bw)
 #plot_nonpara_eval(true_dist, est_dist)
+

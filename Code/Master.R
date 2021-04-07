@@ -66,6 +66,8 @@ incid <- nour_sim_data(params) # important! must be same dist as in samp_pois
 
 incid <- si_sim(params)
 
+incid <- sii_sim(params)
+
 # plot outbreak
 pdf(file = paste0(outpath, "Infections_", sim_type, ".pdf"))
 infections_plot(incid)
@@ -76,13 +78,13 @@ dev.off()
 ##################### Estimate Rt ####################################
 ######################################################################
 
-Rt <- Rt_est(incid, vals, 'weibull', params)
+Rt <- Rt_est(incid, vals, 'gamma', params, deterministic = F, correct_bias = T)
 
 Rt_nonpara <- Rt_est_nonpara(incid, samps, 'nsr', params)
 
 # plot
-png(file = paste0(outpath, "CompareRt_NonPara", params[['sim_type']], ".png"))
-compare_rt(Rt_nonpara)
+png(file = paste0(outpath, "CompareRt_", params[['sim_type']], ".png"))
+compare_rt(Rt)
 dev.off()
 
 MSE <- MSE_est(Rt)
