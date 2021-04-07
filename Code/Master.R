@@ -57,6 +57,19 @@ serial_est_plot(params$study_len, params$sim_mean, params$sim_var,
 	params$sim_type, vals)
 dev.off()
 
+######################################################################
+############## Evaluate Serial Interval ##############################
+######################################################################
+
+# non parametric
+nonpar_sim <- nonpara_eval(params, 'nsr')
+plot_nonpara_distplot(nonpar_sim, 'ridge', params)
+plot_nonpara_distplot(nonpar_sim, 'violin', params)
+
+true_dist <- gen_distribution(params[['study_len']], params[['sim_mu']], params[['sim_var']], params[['sim_type']], 1)$omega
+
+plot_nonpara_eval(true_dist, nonpar_sim)
+
 
 
 ######################################################################
