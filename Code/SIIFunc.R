@@ -45,14 +45,14 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
     ## compute I(p) first:
     ## get omega(n*delta) I(t-n*delta) => total_infec (= All infected for a TSI from 1 until tau_m at all deltas)
     I_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$infected
-    R_mean <- mean(data$R_t[t])
+    R_mean <- data$R_t[t] #mean(data$R_t[t])
     I_p <- R_mean * omega * I_vec * data$S[t] / data$N[t] #* (1/delta)
     ## get I(u)
     infec <- sum(I_p)
     data$infected[t] <- infec
 
     # update total infected
-    data$I[t] <- data$I[t] + infec
+    # data$I[t] <- data$I[t] + infec
   }
 
   plot(data$infected, type='l')
@@ -60,12 +60,17 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
 
   #which(data$infected == max(data$infected), arr.ind=T)
 
+  # return(data)
+
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
-    summarise(infected_day = round(mean(infected)), R_val = mean(R_t),
-              S_daily = mean(S), N = mean(N)) %>%
-    mutate(I_daily = round(N - S_daily))
+    summarise(infected_day = sum(infected), R_val = mean(R_t),
+              S_daily = last(S), N = last(N))
+
+  daily_infec$I_cum <- cumsum(daily_infec$infected_day)
+  daily_infec$S_pct <- daily_infec$S_daily / daily_infec$N
+  daily_infec$I_pct <- daily_infec$I_cum / daily_infec$N
 
   return(daily_infec)
 }
@@ -75,10 +80,10 @@ si_sim <- function(sim_mu, sim_var, sim_type, delta, days = n_days,
 
 ## Plot
 si_plot <- function (model){
-  plot(x = model$days, y = model$S_daily,
+  plot(x = model$days, y = model$S_pct,
        type="l", col = "blue", lwd=2,
-       ylim = c(0,population), ylab = "Susceptible and Infected Population", xlab = "Days")
-  lines(x = model$days, y = model$I_daily,
+       ylim = c(0,1), ylab = "Susceptible and Infected Population", xlab = "Days")
+  lines(x = model$days, y = model$I_pct,
         type = "l", col = "orange", lwd=2)
   legend("topright", legend = c("Susceptible", "Infected"), col = c("blue", "orange"), pch = 16, bty = "n")
 }
@@ -124,9 +129,9 @@ sii_sim <- function(sim_mu1, sim_var1, sim_type1, sim_mu2, sim_var2, sim_type2,
   data$R_t2 <- rep(R2, each = (delta * days / length(R2)))
 
   # start of the two pandemics (1 assumed to start in beginning, 2 is variable)
-  data$new_infected1[1:(tau_m * delta)] <- 1
+  data$new_infected1[1:(tau_m * delta)] <- 5
   data[1:(start_mutation * delta),]$new_infected2 <- 0
-  data$new_infected2[(start_mutation * delta+1):(start_mutation*delta + (tau_m * delta))] <- 1
+  data$new_infected2[(start_mutation * delta+1):(start_mutation*delta + (tau_m * delta))] <- 5
 
   data$S[1] <- data$N[1] - data$new_infected1[1] - data$new_infected2[1]
   for (t in 2:(tau_m * delta)){
@@ -178,12 +183,18 @@ sii_sim <- function(sim_mu1, sim_var1, sim_type1, sim_mu2, sim_var2, sim_type2,
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
-    summarise(infected_day1 = round(mean(new_infected1)),
-              infected_day2 = round(mean(new_infected2)),
+    summarise(infected_day1 = sum(new_infected1),
+              infected_day2 = sum(new_infected2),
               R1_val = mean(R_t1),
               R2_val = mean(R_t2),
-              S_daily = mean(S), N = mean(N)) %>%
-    mutate(I_daily = round(N - S_daily))
+              S_daily = last(S), N = last(N))
+
+  daily_infec$I1_cum <- cumsum(daily_infec$infected_day1)
+  daily_infec$I2_cum <- cumsum(daily_infec$infected_day2)
+  daily_infec$S_pct <- daily_infec$S_daily / daily_infec$N
+  daily_infec$I1_pct <- daily_infec$I1_cum / daily_infec$N
+  daily_infec$I2_pct <- daily_infec$I2_cum / daily_infec$N
+
   return(daily_infec)
 }
 
@@ -191,18 +202,20 @@ sii_sim <- function(sim_mu1, sim_var1, sim_type1, sim_mu2, sim_var2, sim_type2,
 
 ## Plot
 si_plot <- function (model){
-  plot(x = model$days, y = model$S_daily,
+  plot(x = model$days, y = model$S_pct,
        type="l", col = "blue", lwd=2,
-       ylim = c(0,population), ylab = "Susceptible and Infected Population", xlab = "Days")
-  lines(x = model$days, y = model$I_daily,
+       ylim = c(0,1), ylab = "Susceptible and Infected Population", xlab = "Days")
+  lines(x = model$days, y = model$I1_pct,
         type = "l", col = "orange", lwd=2)
-  legend("topright", legend = c("Susceptible", "Infected"), col = c("blue", "orange"), pch = 16, bty = "n")
+  lines(x = model$days, y = model$I2_pct,
+      type = "l", col = "green", lwd=2)
+  legend("topright", legend = c("Susceptible", "Infected1", "Infected2"), col = c("blue", "orange", 'green'), pch = 16, bty = "n")
 }
 
 
 # test
-R1 <- 1.2; R2 <- 1.4; sim_mu1 <- 7; sim_var1 <- 2; sim_mu2 <- 7; sim_var2 <- 2
-sim_type1 <- "gamma"; sim_type2 <- "gamma"; N <- 60000000; start_mutation <- 100
+R1 <- 1.5; R2 <- 1.9; sim_mu1 <- 7; sim_var1 <- 2; sim_mu2 <- 7; sim_var2 <- 2
+sim_type1 <- "gamma"; sim_type2 <- "gamma"; N <- 60000000; start_mutation <- 75
 
 si_model <- sii_sim(sim_mu1, sim_var1, sim_type1,
                     sim_mu2, sim_var2, sim_type2,
