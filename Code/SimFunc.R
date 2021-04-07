@@ -10,6 +10,7 @@ library(np)
 library(KernSmooth)
 library(mixdist)
 library(msm)
+library(ggridges)
 imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
 
@@ -248,7 +249,7 @@ nonpara_eval <- function(params, bw){
   R_val <- params[['R_val']]; study_len <- params[['study_len']]
   num_people <- params[['num_people']]; sim_mu <- params[['sim_mu']]
   sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
-  delta <- params[['delta']]; simulations <- params[['simulations']]
+  delta <- params[['delta']]; sims <- params[['simulations']]
 
   simulations <- list()
   for (i in 1:sims){
@@ -264,8 +265,42 @@ nonpara_eval <- function(params, bw){
     simulations[[i]] <- simulation
   }
   full <- do.call('rbind', simulations)
+  #omega <- gen_distribution(study_len, sim_mu, sim_var, sim_type, 1)$omega
+  #full$Omega <- rep(omega, study_len*sims)
   colnames(full) <- c('X', 'Y', 'Sim', 'Bandwidth')
   return(full)
+}
+
+plot_nonpara_distplot <- function(est_dist, plot_type, params){
+  omega <- data.frame(matrix(nrow = params[['study_len']], ncol = 2))
+  colnames(omega) <- c('X', 'Y')
+  omega$Y <- gen_distribution(params[['study_len']], params[['sim_mu']], params[['sim_var']], params[['sim_type']], 1)$omega
+  omega$X <- 1:params[['study_len']]
+  est_dist$X <- as.factor(est_dist$X)
+  if (plot_type == 'ridge'){
+    ggplot() +
+      geom_density_ridges_gradient(data = est_dist, aes(Y, X),
+                                   scale = 3, rel_min_height = 0.01, size = 0.3) +
+      theme_ridges() + theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)) +
+      geom_point(data = omega, aes(Y, X), color = 'green', shape = 5) +
+      xlim(0, 0.35) +
+      coord_flip() +
+      ylab('Days') + xlab('Estimated Y-values') +
+      ggsave(paste0(outpath, 'SerialEst_nonpara_ridgeplot_', length(est_dist$X), '.png'), width = 10, height = 5)
+  }
+  if (plot_type == 'violin'){
+    ggplot(est_dist, aes(X, Y)) +
+      geom_violin() + theme_minimal() +
+      theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)) +
+      ylab('') + xlab('Days')
+      ggsave(paste0(outpath, 'SerialEst_nonpara_violinplot_', length(est_dist$X), '.png'), width = 10, height = 5)
+  }
 }
 
 
@@ -284,48 +319,86 @@ plot_nonpara_eval <- function(true_dist, est_dist) {
 ###############################################################
 #################### Estimate Rt ##############################
 ###############################################################
-Rt_est <- function(df, vals, type, params) {
+Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, variant = F) {
   n_days <- params[['n_days']]
   start <- params[['study_len']]
+  type <- params[['sim_type']]
   data <- data.frame(matrix(nrow = n_days, ncol = 5))
   names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt')
 
+  if (variant){
+    data$Rt1 <- rep(df$R1_val)
+    data$Rt2 <- rep(df$R2_val)
+  }
+  else{
+     data$Rt <- rep(df$R_val)
+  }
+
   data$Date <- seq(1, n_days)
-  data$est_a <- rep(vals$shape, n_days)
-  data$est_b <- rep(vals$rate, n_days)
-  data$Rt <- rep(df$R_val)
-  #data$True_est_a <- rep(vals[, 3], each = n_days)
-  #data$True_est_b <- rep(vals[, 4], each = n_days)
 
-  for (i in start:nrow(data)) {
-    if (data[i,]$Date <= start) {
-      data[i,]$Est_Rt <- NA
-    }
-    else {
-      #a <- data[i,]$est_a
-      #b <- data[i,]$est_b
-      mean <- vals$meanhat
-      var <- vals$varhat
-      t <- data[i,]$Date
+  if (deterministic){
+    mean <- params[['sim_mu']]
+    var <- params[['sim_var']]
 
-      dist <- rev(gen_distribution(t - 1, mean, var, type, 1))
-      I <- df[which(df$days == t),]$infected_day
-      I_window <- df[df$days %in% 1:(t - 1),]$infected_day
-      data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
+    for (i in start:nrow(data)) {
+      if (data[i,]$Date <= start) {
+        data[i,]$Est_Rt <- NA
+      }
+      else {
+        t <- data[i,]$Date
+
+        omega <- rev(gen_distribution(t - 1, mean, var, type, 1)$omega)
+        I <- df[which(df$days == t),]$infected_day
+        I_window <- df[df$days %in% 1:(t - 1),]$infected_day
+        data[i,]$Est_Rt <- (I) / (sum(I_window * omega))
+      }
     }
   }
 
+  else{
+    data$est_a <- rep(vals$shape, n_days)
+    data$est_b <- rep(vals$rate, n_days)
+
+    for (i in start:nrow(data)) {
+      if (data[i,]$Date <= start) {
+        data[i,]$Est_Rt <- NA
+      }
+      else {
+        #a <- data[i,]$est_a
+        #b <- data[i,]$est_b
+        mean <- vals$meanhat
+        var <- vals$varhat
+        t <- data[i,]$Date
+
+        omega <- rev(gen_distribution(t - 1, mean, var, type, 1)$omega)
+        I <- df[which(df$days == t),]$infected_day
+        I_window <- df[df$days %in% 1:(t - 1),]$infected_day
+        data[i,]$Est_Rt <- (I) / (sum(I_window * omega))
+      }
+    }
+  }
+  if (correct_bias){
+    data$Est_Rt <- data$Est_Rt * 1/df$S_pct
+  }
   return(data)
 }
 
-Rt_est_nonpara <- function(df, samps, bw, params) {
+Rt_est_nonpara <- function(df, samps, bw, params, correct_bias = F, variant = F) {
   start <- params[['study_len']]
   n_days <- params[['n_days']]
   data <- data.frame(matrix(nrow = n_days, ncol = 3))
   names(data) <- c('Date', 'Rt', 'Est_Rt')
 
   data$Date <- rep(1:n_days)
-  data$Rt <- rep(df['R_val'][[1]])
+
+  if (variant){
+    data$Rt1 <- rep(df$R1_val)
+    data$Rt2 <- rep(df$R2_val)
+  }
+
+  else{
+    data$Rt <- rep(df['R_val'][[1]])
+  }
 
   for (i in start:nrow(data)) {
     if (data[i,]$Date <= start) {
@@ -339,6 +412,9 @@ Rt_est_nonpara <- function(df, samps, bw, params) {
       I_window <- df[df$days %in% 1:(t - 1),]$infected_day
       data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
     }
+  }
+  if (correct_bias){
+    data$Est_Rt <- data$Est_Rt * 1/df$S_pct
   }
   return(data)
 }
