@@ -52,7 +52,7 @@ si_sim <- function(params) {
     ## get omega(n*delta) I(t-n*delta) => total_infec (= All infected for a TSI from 1 until tau_m at all deltas)
     I_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$infected
     R_mean <- data$R_t[t] #mean(data$R_t[t])
-    I_p <- R_mean * omega * I_vec * data$S[t] / data$N[t]
+    I_p <- R_mean * omega$omega * I_vec * data$S[t] / data$N[t]
     ## get I(u)
     infec <- sum(I_p)
     data$infected[t] <- infec
@@ -140,14 +140,14 @@ sii_sim <- function(params) {
     # update susceptible
     data$S1[t] <- data$S1[t-1] - data$I1[t-1]
     I1_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$I1
-    data$I1[t] <- data$R_t1[t] * sum(I1_vec * omega1) * data$S1[t] / data$N[t]
+    data$I1[t] <- data$R_t1[t] * sum(I1_vec * omega1$omega) * data$S1[t] / data$N[t]
 
     if (t >= (start_variant * delta + 1)){
       # update susceptible, substract both normal virus and variant
       data$S2[t] <- data$S2[t-1] - data$I2[t-1] + (cross * data$I1[t-start])
       data$S1[t] <- data$S1[t] + (cross * data$I2[t-start])
       I2_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$I2
-      data$I2[t] <- data$R_t2[t] * sum(I2_vec * omega2) * data$S2[t] / data$N[t]
+      data$I2[t] <- data$R_t2[t] * sum(I2_vec * omega2$omega) * data$S2[t] / data$N[t]
     }
   }
 

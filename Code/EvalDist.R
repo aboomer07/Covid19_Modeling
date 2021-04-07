@@ -3,7 +3,7 @@
 # Created on: 21.03.21
 
 source(paste0(getwd(), "/Code/SimFunc.R"))
-
+source(paste0(getwd(), "/Code/Params.R"))
 
 ######################################################################
 #############       Serial Interval Plots        #####################
@@ -15,20 +15,22 @@ serial_hist_cont <- function (sampscont, dist){
 		 border = "lightgrey", freq = F, xlab = "Time", main=NULL)
 	lines(dist, lwd=1.5)
 	text(quantile(sampscont, probs=0.98), max(dist)*1.3,
-	 paste("Distribution =", sim_type, "\nMean =", sim_mean, "; Var =", sim_var,
-		   "\nDelta =", delta, "\nStudy length =", study_len,
-		   "\nSample size =", num_people))
+	 paste("Distribution =", params$sim_type, "\nMean =", params$sim_mu,
+	 		 "; Var =", params$sim_var, "\nDelta = 1/", params$delta,
+	 		 "\nSample size =", params$num_people))
 }
 
 # discretized serial interval histogram
 serial_hist_disc <- function (samps){
-	omegadaily <- gen_distribution(study_len, sim_mean, sim_var, sim_type, 1)
-	hist(samps, breaks=seq(min(samps)-0.5, max(samps)+0.5, by=1), freq = F,
-	 	 col="lightblue", xlab = "Day", main = NULL)
-	lines(omegadaily, lwd = 1.5)
-	text(quantile(samps, probs=0.98), max(omegadaily)*0.9,
-	 paste("Distribution =", sim_type, "\nMean =", sim_mean, "; Var =", sim_var,
-		   "\nStudy length =", study_len, "\nSample size =", num_people))
+	omegadaily <- gen_distribution(params$study_len, params$sim_mu, 
+		params$sim_var, params$sim_type, 1)
+	hist(samps, breaks=seq(min(samps)-0.5, max(samps)+0.5, by=1), freq = F, 
+		col="lightblue", xlab = "Day", main = NULL)
+	lines(omegadaily$omega, lwd = 1.5)
+	text(quantile(samps, probs=0.98), max(omegadaily$omega)*0.9,
+	 paste("Distribution =", params$sim_type, "\nMean =", params$sim_mu,
+	 	 "; Var =", params$sim_var, "\nDelta =", 1,
+	 	 	"\nSample size =", params$num_people))
 }
 
 
@@ -37,12 +39,9 @@ serial_hist_disc <- function (samps){
 ############## Serial Interval Simulation and Estimation Plot  ######################
 #####################################################################################
 
-study_len <- 25
-sim_mean <- 6.6
-sim_var <- 1.1
 
 #Always run this and manually change the parameters in the graph... 
-true_gamma <- gen_distribution(study_len, sim_mean, sim_var, "gamma", 1)
+true_gamma <- gen_distribution(params$study_len, params$sim_mean, params$sim_var, "gamma", 1)
 
 SI_plot_distribution <- function(data){
 
@@ -123,10 +122,10 @@ serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpar
 	sim_mean <- params[['sim_mu']]; sim_var <- params[['sim_var']]; 
 	sim_type <- params[['sim_type']]; study_len <- params[['study_len']]
 
-	true <- gen_distribution(study_len, sim_mean, sim_var, sim_type, 1)
+	true <- gen_distribution(params$study_len, sim_mean, sim_var, sim_type, 1)
 
 	if (!nonpara){
-		est <- dgamma(1:study_len, vals$shape, vals$rate)
+		est <- dgamma(1:params$study_len, vals$shape, vals$rate)
 		df_e <- as.data.frame(est)
 
 	}
@@ -136,10 +135,10 @@ serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpar
 		df_e <- as.data.frame(est$y)
 	}
 	
-	plot(true, type = "l", main = NULL, xlab = "Day", ylab = "Density", lwd=2)
+	plot(true$omega, type = "l", main = NULL, xlab = "Day", ylab = "Density", lwd=2)
 	lines(est, col = "red", lwd=2)
 
-	df_t<-as.data.frame(true)
+	df_t<-as.data.frame(true$omega)
 	df<-bind_cols(df_t, df_e)
 	MSE<-MSE_est2(df)
 
@@ -186,10 +185,10 @@ serial_est_plot_full <- function(params, nonpara = F, bw = NULL){
 		df_e <- as.data.frame(est$y)
 	}
 
-	plot(true, type = "l", main = NULL, xlab = "Day", ylab = "Density", lwd=2)
+	plot(true$omega, type = "l", main = NULL, xlab = "Day", ylab = "Density", lwd=2)
 	lines(est, col = "red", lwd=2)
 
-	df_t<-as.data.frame(true)
+	df_t<-as.data.frame(true$omega)
 	df<-bind_cols(df_t, df_e)
 	MSE<-MSE_est2(df)
 

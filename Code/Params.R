@@ -6,7 +6,7 @@ params[['num_people']] <- 30
 params[['simulations']] <- 1000
 params[['sim_type']] <- 'weibull'
 params[['n_days']] <- 300
-params[['delta']] <- 24
+params[['delta']] <- 24*4
 params[['n']] <- params[['tau_m']] * params[['delta']]
 params[['R_val']] <- 1.5
 params[['pop']] <- 6000000

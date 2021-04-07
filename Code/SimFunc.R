@@ -29,14 +29,14 @@ gen_distribution <- function(k, mean, variance, type, delta) {
   if (type == 'norm') {
     a <- mean * delta
     b <- variance * delta
-    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
+    #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dnorm(k, a, b)
   }
 
   if (type == 'lnorm') {
     a <- log(mean^2 / (sqrt(mean^2 + variance))) + log(delta)
     b <- log(1 + variance / mean^2)
-    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
+    #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dlnorm(k, a,b)
   }
 
@@ -44,17 +44,19 @@ gen_distribution <- function(k, mean, variance, type, delta) {
     a <- mean^2 / variance
     b <- (mean / variance) / delta
     # b <- 1/b
-    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
+    #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dgamma(k, a, b)
   }
 
   if (type == 'weibull') {
     a <- as.numeric(weibullpar(mean, variance)[1])
     b <- as.numeric(weibullpar(mean, variance)[2])*delta
-    print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
+    #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
     omega <- dweibull(k, a, b)
   }
-  return(omega)
+
+  distribution <- list(a = a, b = b, omega = omega)
+  return(distribution)
 }
 
 
@@ -75,7 +77,7 @@ samp_pois <- function(params) {
   # Generate Distribution for serial interval
   omega <- gen_distribution(study_len, sim_mu, sim_var, sim_type, delta)
   #Generate lambda parameter for the poisson draw
-	Lambda <- Rt * omega
+	Lambda <- Rt * omega$omega
 
   range <- 1:(study_len*delta)
 
@@ -95,7 +97,7 @@ samp_pois <- function(params) {
   }
 
   # Get output that includes true distribution and simulated secondary cases
-  serinfect <- list(samplescont = samplescont, daily = daily, dist = omega)
+  serinfect <- list(samplescont = samplescont, daily = daily, dist = omega$omega)
   return(serinfect)
 }
  
