@@ -2,7 +2,7 @@
 # Created by: jacobpichelmann
 # Created on: 06.02.21
 
-imppath <- paste0(getwd(), '/Code/Data/')
+imppath <- paste0(getwd(), '/Code/')
 outpath <- paste0(getwd(), '/Output/')
 
 source(paste0(getwd(), "/Code/Params.R"))
@@ -22,15 +22,15 @@ serinfect <- samp_pois(params)
 # get discretized and "continuous" secondary cases
 samps <- serinfect$daily
 sampscont <- serinfect$samplescont
-dist <- serinfect$omega
+dist <- serinfect$dist
 
 # plot serial interval simulation in continuous time
-pdf(file = paste0(outpath, "SerialHistCont_", sim_type, ".pdf"))
+pdf(file = paste0(outpath, "SerialHistCont_", params$sim_type, ".pdf"))
 serial_hist_cont(sampscont, dist)
 dev.off()
 
 # plot discretized serial interval
-pdf(file = paste0(outpath, "SerialHistDisc_", sim_type, ".pdf"))
+pdf(file = paste0(outpath, "SerialHistDisc_", params$sim_type, ".pdf"))
 serial_hist_disc(samps)
 dev.off()
 
@@ -52,8 +52,9 @@ vals <- serial_ests(samps) # here we obtain the params for Rt_est
 #estimates are sensitive to num_people, as should be!
 
 # plot estimate
-pdf(file = paste0(outpath, "SerialEst_", sim_type, ".pdf"))
-serial_est_plot(study_len, sim_mean, sim_var, sim_type, vals)
+pdf(file = paste0(outpath, "SerialEst_", params$sim_type, ".pdf"))
+serial_est_plot(params$study_len, params$sim_mean, params$sim_var, 
+	params$sim_type, vals)
 dev.off()
 
 
