@@ -120,35 +120,33 @@ sii_sim <- function(params) {
 
   data$S[1] <- data$N[1] - data$I1[1] - data$I2[1]
   for (t in 2:(tau_m * delta)){
-    data$S[t] <- data$S[t-1] - data$I1[t-1] - data$I2[1]
+    data$S[t] <- data$S[t-1] - data$I1[t-1] - data$I2[t-1]
   }
 
   # get serial intervals
-  omega1 <- rev(gen_distribution(tau_m, sim_mu1, sim_var1, sim_type1, delta))
-  omega2 <- rev(gen_distribution(tau_m, sim_mu2, sim_var2, sim_type2, delta))
+  omega1 <- rev(gen_distribution(tau_m, sim_mu1, sim_var1, sim_type1, delta)$omega)
+  omega2 <- rev(gen_distribution(tau_m, sim_mu2, sim_var2, sim_type2, delta)$omega)
 
   # TODO Finish model
 
   # simulate outbreak
   start <- ((tau_m) * delta) + 1
 
-
-
   for (t in start:dim(data)[1]) {
     if (t < (start_variant * delta + tau_m * delta + 1)){
       data$S[t] <- data$S[t-1] - data$I1[t-1] - data$I2[t-1]
 
       I1_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$I1
-      data$I1[t] <- data$R_t1[t] * sum(I1_vec * omega1$omega) * data$S[t] / data$N[t]
+      data$I1[t] <- data$R_t1[t] * sum(I1_vec * omega1) * data$S[t] / data$N[t]
     }
 
     else{
       data$S[t] <- data$S[t-1] - data$I1[t-1] - data$I2[t-1]
 
       I1_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$I1
-      data$I1[t] <- data$R_t1[t] * sum(I1_vec * omega1$omega) * data$S[t] / data$N[t]
+      data$I1[t] <- data$R_t1[t] * sum(I1_vec * omega1) * data$S[t] / data$N[t]
       I2_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$I2
-      data$I2[t] <- data$R_t2[t] * sum(I2_vec * omega2$omega) * data$S[t] / data$N[t]
+      data$I2[t] <- data$R_t2[t] * sum(I2_vec * omega2) * data$S[t] / data$N[t]
     }
   }
 
@@ -181,7 +179,18 @@ si_plot <- function (model){
     col = c("blue", 'red', "orange", 'green'), pch = 16, bty = "n")
 }
 
-############################## SSII MODEL #######################################
+# test
+params[['R_val']] <- 1.5
+params[['R_val_variant']] <- 1.9
+params[['sim_type']] <- 'gamma'
+params[['sim_type_variant']] <- 'gamma'
+params[['start_variant']] <- 50
+params[['n_days']] <- 150
+
+si_model <- sii_sim(params)
+si_plot(si_model)
+
+############################## SSII MODEL ######################################
 # do the same but add two different infected + different susceptibility groups
 
 ssii_sim <- function(params) {
@@ -271,13 +280,3 @@ si_plot <- function (model){
     legend = c("Susceptible1", 'Susceptible2', "Infected1", "Infected2"), 
     col = c("blue", 'red', "orange", 'green'), pch = 16, bty = "n")
 }
-
-# test
-#params[['R_val']] <- 1.5
-#params[['R_val_variant']] <- 1.9
-#params[['sim_type']] <- 'gamma'
-#params[['sim_type_variant']] <- 'gamma'
-#params[['start_variant']] <- 75
-#
-#si_model <- sii_sim(params)
-#si_plot(si_model)
