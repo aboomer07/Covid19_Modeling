@@ -10,6 +10,7 @@ library(np)
 library(KernSmooth)
 library(mixdist)
 library(msm)
+library(ggridges)
 imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
 
@@ -247,7 +248,7 @@ nonpara_eval <- function(params, bw){
   R_val <- params[['R_val']]; study_len <- params[['study_len']]
   num_people <- params[['num_people']]; sim_mu <- params[['sim_mu']]
   sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
-  delta <- params[['delta']]; simulations <- params[['simulations']]
+  delta <- params[['delta']]; sims <- params[['simulations']]
 
   simulations <- list()
   for (i in 1:sims){
@@ -263,8 +264,40 @@ nonpara_eval <- function(params, bw){
     simulations[[i]] <- simulation
   }
   full <- do.call('rbind', simulations)
+  #omega <- gen_distribution(study_len, sim_mu, sim_var, sim_type, 1)$omega
+  #full$Omega <- rep(omega, study_len*sims)
   colnames(full) <- c('X', 'Y', 'Sim', 'Bandwidth')
   return(full)
+}
+
+plot_nonpara_distplot <- function(est_dist, plot_type, params){
+  omega <- data.frame(matrix(nrow = params[['study_len']], ncol = 2))
+  colnames(omega) <- c('X', 'Y')
+  omega$Y <- gen_distribution(params[['study_len']], params[['sim_mu']], params[['sim_var']], params[['sim_type']], 1)$omega
+  omega$X <- 1:params[['study_len']]
+  est_dist$X <- as.factor(est_dist$X)
+  if (plot_type == 'ridge'){
+    ggplot() +
+      geom_density_ridges_gradient(data = est_dist, aes(Y, X)) + theme_minimal() +
+      theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)) +
+      geom_point(data = omega, aes(Y, X), color = 'green', shape = 5) +
+      coord_flip() +
+      ylab('Days') + xlab('Estimated Y-values') +
+      ggsave(paste0(outpath, 'SerialEst_nonpara_ridgeplot_', length(est_dist$X), '.png'), width = 10, height = 5)
+  }
+  if (plot_type == 'violin'){
+    ggplot(est_dist, aes(X, Y)) +
+      geom_violin() + theme_minimal() +
+      theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)) +
+      ylab('') + xlab('Days')
+      ggsave(paste0(outpath, 'SerialEst_nonpara_violinplot_', length(est_dist$X), '.png'), width = 10, height = 5)
+  }
 }
 
 
