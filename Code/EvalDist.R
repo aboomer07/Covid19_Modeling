@@ -119,6 +119,10 @@ SI_plot_distribution <- function(data){
 
 
 serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpara = F){
+
+	sim_mean <- params[['sim_mu']]; sim_var <- params[['sim_var']]; 
+	sim_type <- params[['sim_type']]; study_len <- params[['study_len']]
+
 	true <- gen_distribution(study_len, sim_mean, sim_var, sim_type, 1)
 
 	if (!nonpara){
@@ -160,12 +164,15 @@ serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpar
 # second function that does all at once so there is no confusion between samps creation and simulation parameters for
 # true dist
 
-serial_est_plot_full <- function(study_len, sim_mean, sim_var, sim_type, R_val, nonpara = F, bw = NULL){
+serial_est_plot_full <- function(params, nonpara = F, bw = NULL){
+
+	sim_mean <- params[['sim_mu']]; sim_var <- params[['sim_var']]; 
+	sim_type <- params[['sim_type']]; study_len <- params[['study_len']]
+	R_val <- params[['R_val']]
+
 	true <- gen_distribution(study_len, sim_mean, sim_var, sim_type, 1)
 
-	samps <- samp_pois(R_val = 1.6, study_len = study_len,
-					   num_people = num_people, sim_mu = sim_mean,
-					   sim_sig = sim_var, sim_type = sim_type, delta = delta)$daily
+	samps <- samp_pois(params)$daily
 
 	if (!nonpara){
 		vals <- serial_ests(samps)
@@ -204,8 +211,6 @@ serial_est_plot_full <- function(study_len, sim_mean, sim_var, sim_type, R_val, 
 
 }
 
-
-
 ######################################################################
 ##############         Simulate Incidence       ######################
 ######################################################################
@@ -221,18 +226,9 @@ infections_plot <- function(incid){
 		 ylim = c(0, 2))
 }
 
-
-
-
-
-
-
-### Draw daily incidence of cases and corresponding Rt, given type of omega
-#
-
+### Draw daily incidence of cases and corresponding Rt, given type of omega #
 
 # infections_plot(type = 'gamma')
-
 
 ### Compare estimate of Rt to its true value 
 
@@ -253,61 +249,5 @@ sim_type <- 'gamma'; delta <- 24; bw <- 'nsr'; sims <- 1000
 
 true_dist <- gen_distribution(study_len, sim_mu, sim_sig, sim_type, 1)
 
-est_dist <- nonpara_eval(R_val, study_len, num_people, sim_mu,
-  sim_sig, sim_type, delta, sims, bw)
-
+est_dist <- nonpara_eval(params, bw)
 plot_nonpara_eval(true_dist, est_dist)
-
-
-
-
-######################################################################
-#############               LEGACY               #####################
-######################################################################
-
-# # # # Serial Interval
-
-#
-# samp_pois_plot <- function(samps, study_len){
-#   data.frame(table(samps)) %>%
-#     mutate(samps = as.numeric(as.character(samps))) %>%
-#     ggplot(aes(x=samps, y=Freq)) + geom_bar(stat = "identity") + xlab("days") + ylab("count") +
-#       scale_x_continuous(limits = c(0,study_len)) + theme_minimal()
-# }
-#
-# samp_pois_plot(samps = samps, study_len = study_len*delta)
-
-### Fit gamma and compare it to true distribution -daily
-
-
-
-
-# # # # - - - - - - - - - - - -
-
-#og_gamma <- gen_distribution(15, sim_mu, sim_var, "gamma")
-#new_gamma <- gen_distribution(15, mean(params[params$Distribution == 'gamma', 'True_a']), mean(params[params$Distribution == 'gamma', 'True_b']),"gamma")
-#og_weibull <- gen_distribution(15, a_weibull, b_weibull, "weibull")
-#new_weibull<- gen_distribution(15, mean(params[params$Distribution == 'weibull', 'True_a']), mean(params[params$Distribution == 'weibull', 'True_b']),"gamma")
-#og_norm <- gen_distribution(15, a_norm, b_norm, "norm")
-#new_norm <- gen_distribution(15, mean(params[params$Distribution == 'norm', 'True_a']), mean(params[params$Distribution == 'norm', 'True_b']),"gamma")
-#og_lnorm <- gen_distribution(15, a_lnorm, b_lnorm, "lnorm")
-#new_lnorm <- gen_distribution(15, mean(params[params$Distribution == 'lnorm', 'True_a']), mean(params[params$Distribution == 'lnorm', 'True_b']),"gamma")
-#
-#jpeg("DistCompare.jpg")
-#layout(matrix(1:4, nrow = 2, ncol=2))
-#plot(og_gamma, type="l")
-#lines(new_gamma, type="l", col="green")
-#title("Gamma")
-#
-#plot(og_weibull, type="l")
-#lines(new_weibull, type="l", col="red")
-#title("Weibull")
-#
-#plot(og_norm, type="l")
-#lines(new_norm, type="l", col="blue")
-#title("Normal")
-#
-#plot(og_lnorm, type="l")
-#lines(new_lnorm, type="l", col="orange")
-#title("Log-normal")
-#dev.off()
