@@ -69,8 +69,9 @@ plot_nonpara_distplot(nonpar_sim, 'violin', params)
 
 true_dist <- gen_distribution(params[['study_len']], params[['sim_mu']], params[['sim_var']], params[['sim_type']], 1)$omega
 
+png(paste0(outpath, 'SerialEst_nonpara.png'))
 plot_nonpara_eval(true_dist, nonpar_sim)
-
+dev.off()
 
 ######################################################################
 ############## Simulate Incidence ####################################
