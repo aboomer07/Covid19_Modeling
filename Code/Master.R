@@ -2,6 +2,7 @@
 # Created by: jacobpichelmann
 # Created on: 06.02.21
 
+
 imppath <- paste0(getwd(), '/Code/')
 outpath <- paste0(getwd(), '/Output/')
 
@@ -48,6 +49,7 @@ SI.plot <- SI_plot_distribution(data = SI.simulation)
 ############## Estimate Serial Interval ##############################
 ######################################################################
 
+
 vals <- serial_ests(samps) # here we obtain the params for Rt_est
 
 #estimates are sensitive to num_people, as should be!
@@ -86,40 +88,35 @@ dev.off()
 params[["R_val"]] <- 1.7
 incid_si_gamma_const <- si_sim(params)
 
-params[["R_val"]] <- c(1.7, 0.9, 1.3)
+params[["R_val"]] <- c(1.7, 0.9, 2.5)
 incid_si_gamma_var <- si_sim(params)
 
-params[["R_val"]] <- 1.7
-params[["sim_type"]] <- "weibull"
-incid_si_weibull_const <- si_sim(params)
+# params[["R_val"]] <- 1.7
+# params[["sim_type"]] <- "weibull"
+# incid_si_weibull_const <- si_sim(params)
 
 params[["R_val"]] <- c(1.7, 0.9, 1.3)
 params[["sim_type"]] <- "weibull"
 incid_si_weibull_var <- si_sim(params)
 
 # plot outbreaks si
-png(file = paste0(outpath, "Outbreak_SI_const_gamma.png"))
+pdf(file = paste0(outpath, "Outbreak_SI_const_gamma.pdf"), width=4, height=7)
 si_plot_detail(incid_si_gamma_const)
 dev.off()
 
-png(file = paste0(outpath, "Outbreak_SI_var_gamma.png"))
+pdf(file = paste0(outpath, "Outbreak_SI_var_gamma.pdf"), width=4, height=7)
 si_plot_detail(incid_si_gamma_var)
 dev.off()
 
-png(file = paste0(outpath, "Outbreak_SI_const_weibull.png"))
-si_plot_detail(incid_si_weibull_const)
-dev.off()
+# pdf(file = paste0(outpath, "Outbreak_SI_const_weibull.pdf"), width=4, height=7)
+# si_plot_detail(incid_si_weibull_const)
+# dev.off()
 
-png(file = paste0(outpath, "Outbreak_SI_var_weibull.png"))
+pdf(file = paste0(outpath, "Outbreak_SI_var_weibull.pdf"), width=7, height=7)
 si_plot_detail(incid_si_weibull_var)
 dev.off()
 
-incid_sii <- sii_sim(params)
 
-# plot outbreak sii
-png(file = paste0(outpath, "Outbreak_SII_", params[['sim_type']], ".png"))
-sii_plot(incid_sii)
-dev.off()
 
 ######################################################################
 ##################### Estimate Rt ####################################
@@ -137,72 +134,63 @@ Rt2_si_determ <- Rt_est(incid_si_gamma_var, vals, params, deterministic = T, cor
 Rt2_si_sto <- Rt_est(incid_si_gamma_var, vals, params, deterministic = F, correct_bias = T, variant = F)
 Rt2_nonpara_si <- Rt_est_nonpara(incid_si_gamma_var, samps, 'nsr', params, correct_bias = T)
 
-# Third model
-# need to rerun the serial interval estimation with a weibull
+# # Third model
+# # need to rerun the serial interval estimation with a weibull
 vals <- serial_ests(samp_pois(params)$daily)
-Rt3_si_sto <- Rt_est(incid_si_weibull_const, vals, params, deterministic = F, correct_bias = T, variant = F)
-Rt3_nonpara_si <- Rt_est_nonpara(incid_si_weibull_const, samps, 'nsr', params, correct_bias = T)
+# Rt3_si_sto <- Rt_est(incid_si_weibull_const, vals, params, deterministic = F, correct_bias = T, variant = F)
+# Rt3_nonpara_si <- Rt_est_nonpara(incid_si_weibull_const, samps, 'nsr', params, correct_bias = T)
 
 # Fourth model
 Rt4_si_sto <- Rt_est(incid_si_weibull_var, vals, params, deterministic = F, correct_bias = T, variant = F)
 Rt4_nonpara_si <- Rt_est_nonpara(incid_si_weibull_var, samps, 'nsr', params, correct_bias = T)
 
-Rt_sii <- Rt_est(incid_sii, vals, params, deterministic = T, correct_bias = T, variant = T)
 
-Rt_nonpara_sii <- Rt_est_nonpara(incid_sii, samps, 'nsr', params, correct_bias = T, variant = T)
 
 # plot different sims and estimations
 # Model 1
-png(file = paste0(outpath, "CompareRt1_SI_determ.png"))
+pdf(file = paste0(outpath, "CompareRt1_SI_determ.pdf"), height = 4, width=8)
 compare_rt(Rt1_si_determ, params)
 dev.off()
 
-png(file = paste0(outpath, "CompareRt1_SI_sto.png"))
+pdf(file = paste0(outpath, "CompareRt1_SI_sto.pdf"), height = 4, width=8)
 compare_rt(Rt1_si_sto, params)
 dev.off()
 
-png(file = paste0(outpath, "CompareRt1_SI_nonpara.png"))
+pdf(file = paste0(outpath, "CompareRt1_SI_nonpara.pdf"), height = 4, width=8)
 compare_rt(Rt1_nonpara_si, params)
 dev.off()
 
 # Model 2
-png(file = paste0(outpath, "CompareRt2_SI_determ.png"))
+pdf(file = paste0(outpath, "CompareRt2_SI_determ.pdf"), height = 4, width=8)
 compare_rt(Rt2_si_determ, params)
 dev.off()
 
-png(file = paste0(outpath, "CompareRt2_SI_sto.png"))
+pdf(file = paste0(outpath, "CompareRt2_SI_sto.pdf"), height = 4, width=8)
 compare_rt(Rt2_si_sto, params)
 dev.off()
 
-png(file = paste0(outpath, "CompareRt2_SI_nonpara.png"))
+pdf(file = paste0(outpath, "CompareRt2_SI_nonpara.pdf"), height = 4, width=8)
 compare_rt(Rt2_nonpara_si, params)
 dev.off()
 
 # Model 3
-png(file = paste0(outpath, "CompareRt3_SI_sto.png"))
-compare_rt(Rt3_si_sto, params)
-dev.off()
-
-png(file = paste0(outpath, "CompareRt3_SI_nonpara.png"))
-compare_rt(Rt3_nonpara_si, params)
-dev.off()
+# png(file = paste0(outpath, "CompareRt3_SI_sto.png"))
+# compare_rt(Rt3_si_sto, params)
+# dev.off()
+#
+# png(file = paste0(outpath, "CompareRt3_SI_nonpara.png"))
+# compare_rt(Rt3_nonpara_si, params)
+# dev.off()
 
 # Model 4
-png(file = paste0(outpath, "CompareRt4_SI_sto.png"))
+pdf(file = paste0(outpath, "CompareRt4_SI_sto.pdf"), height = 4, width=8)
 compare_rt(Rt4_si_sto, params)
 dev.off()
 
-png(file = paste0(outpath, "CompareRt4_SI_nonpara.png"))
+pdf(file = paste0(outpath, "CompareRt4_SI_nonpara.pdf"), height = 4, width=8)
 compare_rt(Rt4_nonpara_si, params)
 dev.off()
 
-png(file = paste0(outpath, "CompareRt_SI_", params[['sim_type']], ".png"))
-compare_rt(Rt_sii, params, variant = T)
-dev.off()
-
-png(file = paste0(outpath, "CompareRt_SII_nonpara", params[['sim_type']], ".png"))
-compare_rt(Rt_nonpara_sii, params, variant = T)
-dev.off()
 
 ######################################################################
 ##################### SI Framework ###################################
@@ -220,5 +208,7 @@ si_plot(si_model, Rt_si)
 png(paste0(outpath, "/SII_Plot.png"))
 sii_plot(sii_model, Rt_sii)
 dev.off()
+
+
 
 

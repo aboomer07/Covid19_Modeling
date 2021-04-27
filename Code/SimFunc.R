@@ -23,6 +23,7 @@ outpath <- paste0(getwd(), '/Output/')
 # helper function for gamma dist
 # cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, rate = b)
 
+
 gen_distribution <- function(k, mean, variance, type, delta) {
 
   k <- 1:(k*delta)

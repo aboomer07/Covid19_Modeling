@@ -89,12 +89,12 @@ si_plot_detail <- function (model){
   plot(x = model$days, y = model$S_pct, type="l", col = "blue", lwd=2,
     ylim = c(0, 1), 
     ylab = "Susceptible and Infected Population", xlab="")
-  lines(x = model$days, y = model$I_pct, type = "l", col = "orange", lwd=2)
+  lines(x = model$days, y = model$I_pct, type = "l", col = "yellow", lwd=2)
   legend("topright", legend = c("Susceptible", "Infected"),
-    col = c("blue", "orange"), pch = 20, bty = "n")
-  plot(x = model$days, y = model$I_pct, type="l", lwd=2, col = "green",
-       ylim=c(0, 1), ylab = "Infected", xlab = "")
-  legend("topright", legend = "New Infections", col="green", pch = 16, bty="n")
+    col = c("blue", "yellow"), pch = 20, bty = "n")
+  plot(x = model$days, y = model$infected_day, type="l", lwd=2, col = "brown",
+       ylab = "Infected", xlab = "")
+  legend("topright", legend = "New Infections", col="brown", pch = 16, bty="n")
   plot(x = model$days, y = model$R_val, type="l", lwd=2, col = "red",
        ylim=c(0, 3), ylab = "R(t)", xlab = "Days")
   legend("topright", legend = "R(t)", col="red", pch = 16, bty="n")
@@ -106,6 +106,7 @@ si_plot_detail <- function (model){
 
 ############################## SII MODEL #######################################
 # do the same but add two different infected
+
 
 sii_sim <- function(params) {
 
@@ -188,7 +189,7 @@ sii_sim <- function(params) {
 }
 
 sii_plot <- function (model, Rt){
-  layout(matrix(1:2, nrow=2))
+  layout(matrix(c(rep(1,3), rep(2,3), rep(3,6)), nrow=4, ncol=3, byrow = T))
   plot(x = model$days, y = model$S_pct, type="l", col = "black", lwd=2,
     ylim = c(0, 1), 
     ylab = "Susceptible and Infected", xlab = "Days")
