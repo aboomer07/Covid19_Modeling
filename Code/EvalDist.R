@@ -59,8 +59,8 @@ SI_plot_distribution <- function(data){
 	print(avg_mean_hat)
 
 	#Show distribution of estimates 
-	pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, "_Delta", delta, ".pdf"))
-	par(mfrow = c(2,2))
+	#pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, "_Delta", delta, ".pdf"))
+	#par(mfrow = c(2,2))
 
 	#Alpha hat 
 	hist(estimates$shape_hat, nclass = 20, xlab = "", col = "aliceblue",
@@ -117,7 +117,7 @@ SI_plot_distribution <- function(data){
 		"\n Sample size = ", num_people,
 		"\nDiscretization = 1/", delta,
 		"\nUnderlying distribution = ", sim_type), side = 3, line = -24, outer = TRUE, cex = 0.7)
-	dev.off()
+	#dev.off()
 }
 
 
@@ -278,25 +278,25 @@ compare_rt <- function(Rt, params = NULL, variant = F){
 	if(variant){
 		Rt2 <- c(rep(NA, start_variant), Rt$Rt2[start_variant + 1:n_days])
 		plot(Rt$Rt1, type = "l", 
-			main = paste0("R(t) estimation, true distribution: ", 
-			params[['sim_type']]), xlab = "Day", ylab = "R(t)", 
-			col = "red", ylim = c(0, 3), lwd = 2)
+			#main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
+			 xlab = "Day", ylab = "R(t)",
+			col = "red", ylim = c(0.5, 2.5), lwd = 2)
 		lines(Rt2, col = "orange", lwd=2)
 		lines(Rt$Est_Rt, col = "black", lwd=2)
 		abline(v = start_variant, lwd = 2, lty = "dotted")
 		legend("topleft", 
 			legend = c("True R(t)", "True R(t) Variant", "Estimated R(t)"),
-			col = c("red", "orange", "black"), lty=1, cex=0.9)
+			col = c("red", "orange", "black"), lty=1, cex=0.9, bty="n")
 	}
 
 	else{
 		plot(Rt$Rt, type = "l", 
-			main = paste0("R(t) estimation, true distribution: ", 
-			params[['sim_type']]), xlab = "Day", ylab = "R(t)", 
-			col = "red", ylim = c(0, 3), lwd = 2)
+			#main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
+			xlab = "Day", ylab = "R(t)",
+			col = "red", ylim = c(0.5, 2.5), lwd = 2)
 		lines(Rt$Est_Rt, col = "black", lwd=2)
 		legend("topright", legend = c("True R(t)", "Estimated R(t)"),
-		       col = c("red", "black"), lty=1, cex=0.9)
+		       col = c("red", "black"), lty=1, cex=0.9,bty="n")
 	}
 }
 

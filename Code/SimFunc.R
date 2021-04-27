@@ -23,6 +23,7 @@ outpath <- paste0(getwd(), '/Output/')
 # helper function for gamma dist
 # cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, rate = b)
 
+
 gen_distribution <- function(k, mean, variance, type, delta) {
 
   k <- 1:(k*delta)
@@ -280,12 +281,12 @@ plot_nonpara_distplot <- function(est_dist, plot_type, params){
   if (plot_type == 'ridge'){
     ggplot() +
       geom_density_ridges_gradient(data = est_dist, aes(Y, X),
-                                   scale = 3, rel_min_height = 0.01, size = 0.3) +
+                                   scale = 3, rel_min_height = 0.01, size = 0.1) +
       theme_ridges() + theme(
       legend.position="none",
       panel.spacing = unit(0.1, "lines"),
       strip.text.x = element_text(size = 8)) +
-      geom_point(data = omega, aes(Y, X), color = 'green', shape = 5) +
+      geom_point(data = omega, aes(Y, X), color = 'darkred', shape = 18, size = 3) +
       xlim(0, 0.35) +
       coord_flip() +
       ylab('Days') + xlab('Estimated Y-values') +
@@ -308,11 +309,9 @@ plot_nonpara_eval <- function(true_dist, est_dist) {
   conf <- est_dist %>% group_by(X) %>%
     summarise(upper = max(Y),
               lower = min(Y))
-  png(paste0(outpath, 'SerialEst_nonpara_', length(est_dist$X), '.png'))
-  plot(true_dist, type = 'l', ylim=c(0,max(conf$upper)))
+  plot(true_dist, type = 'l', ylim=c(0,max(conf$upper)), ann = F)
   lines(conf$lower, lty = "dotted", col = "blue")
   lines(conf$upper, lty = "dotted", col = "blue")
-  dev.off()
 }
 
 
@@ -327,10 +326,10 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
   tau_m <- params$tau_m
 
   if (sep_Rt) {
-    data <- data.frame(matrix(nrow = n_days, ncol = 7))
+    data <- data.frame(matrix(nrow = nrow(df), ncol = 7))
     names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt', 'Est_Rt1', 'Est_Rt2')
   }
-  data <- data.frame(matrix(nrow = n_days, ncol = 5))
+  data <- data.frame(matrix(nrow = nrow(df), ncol = 5))
   names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt')
 
   if (variant){
@@ -341,7 +340,7 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
      data$Rt <- rep(df$R_val)
   }
 
-  data$Date <- seq(1, n_days)
+  data$Date <- seq(1, nrow(df))
   data$Est_Rt <- 1
   data[data$Date <= start, ]$Est_Rt <- NA
   if (sep_Rt) {

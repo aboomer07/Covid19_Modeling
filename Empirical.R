@@ -12,6 +12,8 @@ library(gridExtra)
 dt <- read.csv("Data/data_covid_FR.csv")
 COVID_events_FRANCE <- read.csv("Data/COVID_events_FRANCE_rest.csv", sep=";")
 variants <- read.csv("Data/variants_france.csv", sep=";")
+dt_all_countries <- read.csv ("Data/open_stats_coronavirus.csv", sep=";")
+colnames(dt_all_countries) <- c("date","code", "country", "case", "death", "recovery", "source")
 
 #adjust date in the dataframes
 dt$date <- (as.POSIXct(paste(dt$date), format = "%Y-%m-%d",tz="UTC"))
