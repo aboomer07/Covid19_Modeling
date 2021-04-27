@@ -43,6 +43,19 @@ dev.off()
 SI.simulation <- params_distribution(params)
 SI.plot <- SI_plot_distribution(data = SI.simulation)
 
+SI.bias <- params_bias(params)
+
+pdf(file = paste0(outpath, "SerialEstBias_", sim_type, "_S", simulations, ".pdf"))
+par(mfrow = c(2,2))
+plot(SI.bias$"Rt 0.8", type = "l", main = "Rt 0.8",
+	xlab = "1/Delta", ylab = expression(hat(mu) - mu))
+plot(SI.bias$"Rt 1.25", type = "l", main = "Rt 1.25",
+	xlab = "1/Delta", ylab = expression(hat(mu) - mu))
+plot(SI.bias$"Rt 1.5", type = "l", main = "Rt 1.5",
+	xlab = "1/Delta", ylab = expression(hat(mu) - mu))
+plot(SI.bias$"Rt 1.75", type = "l", main = "Rt 1.75",
+	xlab = "1/Delta", ylab = expression(hat(mu) - mu))
+dev.off()
 
 ######################################################################
 ############## Estimate Serial Interval ##############################
