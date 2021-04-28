@@ -56,9 +56,11 @@ SI_plot_distribution <- function(data){
 	avg_var_hat <- data$avg_params[7]
 	avg_var_sd <- data$avg_params[8]
 
+	print(avg_mean_hat)
+
 	#Show distribution of estimates 
-	pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, "_Delta", delta, ".pdf"))
-	par(mfrow = c(2,2))
+	#pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, "_Delta", delta, ".pdf"))
+	#par(mfrow = c(2,2))
 
 	#Alpha hat 
 	hist(estimates$shape_hat, nclass = 20, xlab = "", col = "aliceblue",
@@ -115,8 +117,27 @@ SI_plot_distribution <- function(data){
 		"\n Sample size = ", num_people,
 		"\nDiscretization = 1/", delta,
 		"\nUnderlying distribution = ", sim_type), side = 3, line = -24, outer = TRUE, cex = 0.7)
-	dev.off()
+	#dev.off()
 }
+
+
+SI.bias <- function(data){
+
+	R_val <- params[['R_val']]; study_len <- params[['study_len']]
+  	num_people <- params[['num_people']]; sim_mu <- params[['sim_mu']]
+  	sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
+  	delta <- params[['delta']]; simulations <- params[['simulations']]
+
+	estimates <- data$distribution
+	avg_shape_hat <- data$avg_params[1]
+	avg_shape_sd <- data$avg_params[2]
+	avg_rate_hat <- data$avg_params[3]
+	avg_rate_sd <- data$avg_params[4]
+	avg_mean_hat <- data$avg_params[5]
+	avg_mean_sd <- data$avg_params[6]
+	avg_var_hat <- data$avg_params[7]
+	avg_var_sd <- data$avg_params[8]
+)
 
 
 serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpara = F){
@@ -257,25 +278,25 @@ compare_rt <- function(Rt, params = NULL, variant = F){
 	if(variant){
 		Rt2 <- c(rep(NA, start_variant), Rt$Rt2[start_variant + 1:n_days])
 		plot(Rt$Rt1, type = "l", 
-			main = paste0("R(t) estimation, true distribution: ", 
-			params[['sim_type']]), xlab = "Day", ylab = "R(t)", 
-			col = "red", ylim = c(0, 3), lwd = 2)
+			#main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
+			 xlab = "Day", ylab = "R(t)",
+			col = "red", ylim = c(0.5, 2.5), lwd = 2)
 		lines(Rt2, col = "orange", lwd=2)
 		lines(Rt$Est_Rt, col = "black", lwd=2)
 		abline(v = start_variant, lwd = 2, lty = "dotted")
 		legend("topleft", 
 			legend = c("True R(t)", "True R(t) Variant", "Estimated R(t)"),
-			col = c("red", "orange", "black"), lty=1, cex=0.9)
+			col = c("red", "orange", "black"), lty=1, cex=0.9, bty="n")
 	}
 
 	else{
 		plot(Rt$Rt, type = "l", 
-			main = paste0("R(t) estimation, true distribution: ", 
-			params[['sim_type']]), xlab = "Day", ylab = "R(t)", 
-			col = "red", ylim = c(0, 3), lwd = 2)
+			#main = paste0("R(t) estimation, true distribution: ", params[['sim_type']]),
+			xlab = "Day", ylab = "R(t)",
+			col = "red", ylim = c(0.5, 2.5), lwd = 2)
 		lines(Rt$Est_Rt, col = "black", lwd=2)
 		legend("topright", legend = c("True R(t)", "Estimated R(t)"),
-		       col = c("red", "black"), lty=1, cex=0.9)
+		       col = c("red", "black"), lty=1, cex=0.9,bty="n")
 	}
 }
 

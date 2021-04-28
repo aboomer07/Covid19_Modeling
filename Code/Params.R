@@ -4,9 +4,10 @@ params[['sim_var']] <- 2
 params[['study_len']] <- 20
 params[['num_people']] <- 30
 params[['simulations']] <- 1000
+params[['sim_type']] <- 'norm'
 params[['sim_type']] <- 'gamma'
 params[['n_days']] <- 300
-params[['delta']] <- 24
+params[['delta']] <- 1
 params[['n']] <- params[['tau_m']] * params[['delta']]
 params[['R_val']] <- c(1.4, 1.1, 1.2)
 params[['pop']] <- 6000000
