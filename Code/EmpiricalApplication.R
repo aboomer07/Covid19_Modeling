@@ -31,7 +31,7 @@ df_sum$days <- 1:nrow(df_sum)
 serinfect <- samp_pois(params)
 samps <- serinfect$daily
 
-vals <- serial_ests(samps) # we are not using these values but we need it as an input (ugly code my bad)
+vals <- serial_ests(samps) # we are not using these values but we need it as an input (sorry ugly code my bad)
 
 Rt_summer <- Rt_est(df_sum, vals, params, deterministic = T, correct_bias = F, variant = F)
 Rt_summer$date = df_sum$date
