@@ -19,7 +19,13 @@ colnames(df) <- c('date', 'cum_cases', 'infected_day') # need correct col names 
 # 2020-06-02 must be a data issue as cumulative cases drop by roughly 700
 
 df_sum <- df %>% filter(date > as.Date('2020-07-15') & date < as.Date('2020-10-01'))
+
+# compute weekly rolling average to deal with weekend bias
+df_sum <- df_sum %>% mutate(
+  infected_day = zoo::rollmean(infected_day, k = 7, fill = NA)
+) %>% na.omit()
 df_sum$days <- 1:nrow(df_sum)
+
 
 # simulate serial interval study
 serinfect <- samp_pois(params)
@@ -30,17 +36,24 @@ vals <- serial_ests(samps) # we are not using these values but we need it as an 
 Rt_summer <- Rt_est(df_sum, vals, params, deterministic = T, correct_bias = F, variant = F)
 Rt_summer$date = df_sum$date
 Rt_summer %>% select(date, Est_Rt) %>% na.omit() %>%
-  ggplot() + geom_line(aes(x = date, y = Est_Rt))
+  ggplot() + geom_line(aes(x = date, y = Est_Rt)) +
+  ggsave(paste0(outpath, 'Rt_summer.png'))
 
 # second application: winter 2020 (november, december) continuous lockdown (?)
 
 df_win <- df %>% filter(date > as.Date('2020-10-15') & date < as.Date('2021-01-01'))
+
+# compute weekly rolling average to deal with weekend bias
+df_win <- df_win %>% mutate(
+  infected_day = zoo::rollmean(infected_day, k = 7, fill = NA)
+) %>% na.omit()
 df_win$days <- 1:nrow(df_win)
 
 Rt_winter <- Rt_est(df_win, vals, params, deterministic = T, correct_bias = F, variant = F)
 Rt_winter$date = df_win$date
 Rt_winter %>% select(date, Est_Rt) %>% na.omit() %>%
-  ggplot() + geom_line(aes(x = date, y = Est_Rt))
+  ggplot() + geom_line(aes(x = date, y = Est_Rt)) +
+  ggsave(paste0(outpath, 'Rt_winter.png'))
 
 # third application: variant starting 2021
 df <- read.csv2(paste0(imppath, 'variants_france.csv')) %>% select(semaine, cl_age90, Nb_tests_PCR_TA_crible,
@@ -69,8 +82,15 @@ df_var <- df %>% select(date, total_cases, orig_cases, brit_cases)
 colnames(df_var) <- c('date', 'infected_day', 'I1_daily', 'I2_daily')
 df_var$days <- 1:nrow(df_var)
 
+params['start_variant'] <- 0
 Rt_var <- Rt_est(df_var, vals, params, deterministic = T, correct_bias = F, variant = T, sep_Rt = T)
 # still need to fix NA assignment based on simulation data, line 349 in SimFunc.R
+
+Rt_var %>% select(Date, Est_Rt, Est_Rt1, Est_Rt2) %>% na.omit() %>%
+  reshape2::melt(id.vars = 'Date') %>%
+  ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
+  ggsave(paste0(outpath, 'Rt_variants.png'))
+
 
 
 
