@@ -9,6 +9,8 @@ source(paste0(getwd(), "/Code/SimFunc.R"))
 source(paste0(getwd(), "/Code/SIIFunc.R"))
 source(paste0(getwd(), "/Code/Params.R"))
 
+library(urca)
+
 
 
 # first application: late summer 2020 (august, sept)
@@ -108,9 +110,7 @@ comp_df %>% select(Date, Forecast, Actual) %>% reshape2::melt(id.vars = 'Date') 
 
 
 # third application: variant starting 2021
-df <- read.csv2(paste0(imppath, 'variants_france.csv')) %>% select(semaine, cl_age90, Nb_tests_PCR_TA_crible,
-                                                                   Nb_susp_501Y_V1, Nb_susp_501Y_V2_3, Nb_susp_IND,
-                                                                   Nb_susp_ABS)
+df <- read.csv2(paste0(imppath, 'variants_france.csv')) %>% select(semaine, cl_age90, Nb_tests_PCR_TA_crible, Nb_susp_501Y_V1, Nb_susp_501Y_V2_3, Nb_susp_IND, Nb_susp_ABS)
 
 colnames(df) <- c('week', 'age_grp', 'total_cases', 'brit_cases', 'braz_cases', 'unkw_cases', 'orig_cases')
 
@@ -146,7 +146,11 @@ Rt_var %>% select(Date, Est_Rt, Est_Rt1, Est_Rt2) %>% na.omit() %>%
 sim_winter <- si_sim(params)
 
 
+summary(ur.df(Rt_summer$Est_Rt %>% na.omit(), lags=2, type='drift'))
+summary(ur.df(Rt_winter$Est_Rt %>% na.omit(), lags=2, type='drift'))
 
+kpss.test(Rt_summer$Est_Rt %>% na.omit(), null='Level', lshort=TRUE)
+kpss.test(Rt_winter$Est_Rt %>% na.omit(), null='Level', lshort=TRUE)
 
 
 
