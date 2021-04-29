@@ -20,3 +20,4 @@ params[['start_variant']] <- 50
 params[['sii_cross']] <- 0
 params[['infec_lim']] <- c(0, 1)
 params[['Rt_lim']] <- c(0, 3)
+params[['init_infec']] <- rep(1, params[['tau_m']] * params[['delta']])

@@ -16,6 +16,7 @@ si_sim <- function(params) {
   sim_mu <- params$sim_mu
   sim_var <- params$sim_var
   sim_type <- params$sim_type
+  init_infec <- params$init_infec
 
   start <- ((tau_m) * delta) + 1
 
@@ -28,7 +29,7 @@ si_sim <- function(params) {
 
   # start of epidemic (burn-in)
   # Assume 1 initial ifected and that new ifections happen every 4 days depending on specified R (for burn-in)
-  data$infected[1] <- 1
+  data$infected[1:(tau_m * delta)] <- init_infec
   data$S[1] <- params$pop - data$infected[1]
   data$I <- data$infected
 
@@ -36,7 +37,7 @@ si_sim <- function(params) {
   for (t in 2:(tau_m * delta)){
     data$S[t] <- data$S[t-1] - data$infected[t-1]
     # data$infected[t] <- sum(data$infected[1:t-1]) * R / (delta*2)
-    data$infected[t] <- 5
+    # data$infected[t] <- init_infec
     data$I[t] <- data$I[t-1] + data$infected[t]
   }
 

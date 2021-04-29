@@ -6,6 +6,7 @@ imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
 
 source(paste0(getwd(), "/Code/SimFunc.R"))
+source(paste0(getwd(), "/Code/SIIFunc.R"))
 source(paste0(getwd(), "/Code/Params.R"))
 
 
@@ -39,6 +40,31 @@ Rt_summer %>% select(date, Est_Rt) %>% na.omit() %>%
   ggplot() + geom_line(aes(x = date, y = Est_Rt)) +
   ggsave(paste0(outpath, 'Rt_summer.png'))
 
+# take average and forecast next month
+params['R_val'] <- mean(Rt_summer$Est_Rt, na.rm = T)
+params['pop'] <- 67000000
+params['init_infec'] <- list(tail(df_sum, params$tau_m)$infected_day)
+params['n_days'] <- 50
+
+sim_summer <- si_sim(params)
+
+pdf(file = paste0(outpath, "SI_plot_summer.pdf"), width=4, height=7)
+si_plot_detail(sim_summer)
+dev.off()
+
+actual_cases <- df %>%
+  mutate(actual_cases = zoo::rollmean(infected_day, k = 7, fill = NA)) %>% na.omit() %>%
+  filter(date > as.Date('2020-10-01')) %>% head(., 30)
+
+comp_df <- sim_summer %>% select(days, infected_day) %>% filter(days > 20) %>%
+  cbind(actual_cases %>% select(date, actual_cases))
+colnames(comp_df) <- c('Days', 'Forecast', 'Date', 'Actual')
+
+comp_df %>% select(Date, Forecast, Actual) %>% reshape2::melt(id.vars = 'Date') %>%
+  ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
+  ggsave(paste0(outpath, 'Forecast_summer.png'))
+
+
 # second application: winter 2020 (november, december) continuous lockdown (?)
 
 df_win <- df %>% filter(date > as.Date('2020-10-15') & date < as.Date('2021-01-01'))
@@ -54,6 +80,32 @@ Rt_winter$date = df_win$date
 Rt_winter %>% select(date, Est_Rt) %>% na.omit() %>%
   ggplot() + geom_line(aes(x = date, y = Est_Rt)) +
   ggsave(paste0(outpath, 'Rt_winter.png'))
+
+# take average and forecast next month
+params['R_val'] <- mean(Rt_winter$Est_Rt, na.rm = T)
+params['pop'] <- 67000000
+params['init_infec'] <- list(tail(df_win, params$tau_m)$infected_day)
+params['n_days'] <- 50
+
+sim_winter <- si_sim(params)
+
+pdf(file = paste0(outpath, "SI_plot_winter.pdf"), width=4, height=7)
+si_plot_detail(sim_winter)
+dev.off()
+
+actual_cases <- df %>%
+  mutate(actual_cases = zoo::rollmean(infected_day, k = 7, fill = NA)) %>% na.omit() %>%
+  filter(date > as.Date('2021-01-01')) %>% head(., 30)
+
+comp_df <- sim_winter %>% select(days, infected_day) %>% filter(days > 20) %>%
+  cbind(actual_cases %>% select(date, actual_cases))
+colnames(comp_df) <- c('Days', 'Forecast', 'Date', 'Actual')
+
+comp_df %>% select(Date, Forecast, Actual) %>% reshape2::melt(id.vars = 'Date') %>%
+  ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
+  ggsave(paste0(outpath, 'Forecast_winter.png'))
+
+
 
 # third application: variant starting 2021
 df <- read.csv2(paste0(imppath, 'variants_france.csv')) %>% select(semaine, cl_age90, Nb_tests_PCR_TA_crible,
@@ -90,6 +142,9 @@ Rt_var %>% select(Date, Est_Rt, Est_Rt1, Est_Rt2) %>% na.omit() %>%
   reshape2::melt(id.vars = 'Date') %>%
   ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
   ggsave(paste0(outpath, 'Rt_variants.png'))
+
+sim_winter <- si_sim(params)
+
 
 
 
