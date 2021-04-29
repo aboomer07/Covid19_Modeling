@@ -92,10 +92,10 @@ si_plot_detail <- function (model){
     ylab = "Susceptible and Infected Population", xlab="")
   lines(x = model$days, y = model$I_pct, type = "l", col = "yellow", lwd=2)
   legend("topright", legend = c("Susceptible", "Infected"),
-    col = c("blue", "yellow"), pch = 20, bty = "n")
-  plot(x = model$days, y = model$infected_day, type="l", lwd=2, col = "brown",
-       ylab = "Infected", xlab = "")
-  legend("topright", legend = "New Infections", col="brown", pch = 16, bty="n")
+    col = c("blue", "orange"), pch = 20, bty = "n")
+  plot(x = model$days, y = model$infected_day, type="l", lwd=2, col = "green",
+       ylim=c(0, 1), ylab = "Infected", xlab = "")
+  legend("topright", legend = "New Infections", col="green", pch = 16, bty="n")
   plot(x = model$days, y = model$R_val, type="l", lwd=2, col = "red",
        ylim=c(0, 3), ylab = "R(t)", xlab = "Days")
   legend("topright", legend = "R(t)", col="red", pch = 16, bty="n")
@@ -190,26 +190,40 @@ sii_sim <- function(params) {
 }
 
 sii_plot <- function (model, Rt){
-  layout(matrix(c(rep(1,3), rep(2,3), rep(3,6)), nrow=4, ncol=3, byrow = T))
-  plot(x = model$days, y = model$S_pct, type="l", col = "black", lwd=2,
+  layout_mat <- matrix(c(c(1, 3), c(2, 3)), nrow=2, ncol=2, byrow = T)
+  layout(layout_mat)
+  # layout(mat = matrix(c(2, 3, 0, 1), nrow = 2, ncol = 2),
+  #      heights = c(2, 2), widths = c(2, 2))
+  plot(x = model$days, y = model$S_pct, type="l", col = "blue", lwd=2,
     ylim = c(0, 1), 
-    ylab = "Susceptible and Infected", xlab = "Days")
-  lines(x = model$days, y = model$I1_pct, col = "orange", lwd=2)
-  lines(x = model$days, y = model$I2_pct, col = "green", lwd=2)
-  # lines(x = model$days, y = model$I_pct, col='red', lwd=2)
-  legend("topright",
-    legend = c("Susceptible", "Infected1", "Infected2"),
-    col = c("black", "orange", 'green'), pch = 16, bty = "n")
+    ylab = "Susceptible", xlab = "Days")
+  lines(x = model$days, y = model$I1_pct, col = "yellow", lwd=2, lty='dotted')
+  # lines(x = model$days, y = model$I2_pct, col = "green", lwd=2)
+  lines(x = model$days, y = model$I_pct, col='yellow', lwd=2)
+  legend("left",
+    legend = c("Susceptible", 'Infections1', 'Total Infected'),
+    # legend = c("Susceptible", "Infected1", "Infected2"),
+    col = c("blue", 'yellow', "yellow"), pch = 16, bty = "n",
+    lty=c('solid', 'dotted', 'solid'))
 
-  plot(x = Rt$Date, y = Rt$Rt1, type="l", col = "black", lwd=2,
+  plot(model$days, y=model$I1_daily, type='l', col="brown", lwd=2,
+    ylab='Daily Infected', xlab='Days', ylim=c(0, max(max(model$I1_daily), max(model$I2_daily))))
+  lines(model$days, y=model$I2_daily, col='green', lwd=2)
+  legend('topleft',
+    legend=c('Daily Cases', 'Daily Cases Variant'),
+    col=c('brown', 'green'), pch=16, bty='n')
+
+  plot(x = Rt$Date, y = Rt$Rt1, type="l", col="red", lwd=2,
     ylim = c(0, 3), ylab = "Rt", xlab = "Days")
-  lines(x = Rt$Date, y = Rt$Rt2, col = "orange", lwd=2)
-  lines(x = Rt$Date, y = Rt$Est_Rt, col = "blue", lwd=2)
-  lines(x = Rt$Date, y = Rt$Est_Rt1, col = "green", lwd=2)
-  lines(x = Rt$Date, y = Rt$Est_Rt2, col='red', lwd=2)
-  legend("topright",
-    legend = c("True Rt1", "True Rt2", "Est Rt Overall", 'Est Rt1', 'Est Rt2'),
-    col = c("black", "orange", 'blue', 'green', 'red'), pch = 16, bty = "n")
+  lines(x = Rt$Date, y = Rt$Rt2, col="orange", lwd=2)
+  lines(x = Rt$Date, y = Rt$Est_Rt1, col="black", lwd=2, lty='dotted')
+  lines(x = Rt$Date, y = Rt$Est_Rt2, col='black', lwd=2, lty='dotted')
+  lines(x = Rt$Date, y = Rt$Est_Rt, col="black", lwd=2)
+  # lines(x = Rt$Date, y = Rt$Rt_Avg, col='green', lwd=2)
+  legend("bottomleft",
+    legend = c("True Rt1", "True Rt2", 'Est Rt1', 'Est Rt2', "Est Rt Overall"),
+    col = c("red", "orange", 'black', 'black', 'black'), pch = 16, bty = "n",
+    lty=c('solid', 'solid', 'dotted','dotted', 'solid', 'solid'))
  }
 
 

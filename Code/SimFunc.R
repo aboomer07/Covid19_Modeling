@@ -416,6 +416,14 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
       }
     }
   }
+
+  if (sep_Rt) {
+    df$I1_Prop <- df$I1_daily / df$infected_day
+    df$I2_Prop <- df$I2_daily / df$infected_day
+    df$I2_Prop[is.na(df$I2_Prop)] <- 0
+    data$Rt_Avg <- (df$R1_val * df$I1_Prop) + (df$R2_val * df$I2_Prop)
+  }
+
   if (correct_bias){
     if (sep_Rt) {
       if (sep_S) {
