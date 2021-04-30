@@ -11,10 +11,11 @@ library(KernSmooth)
 library(mixdist)
 library(msm)
 library(ggridges)
+#setwd("..")
 imppath <- paste0(getwd(), '/Data/')
 outpath <- paste0(getwd(), '/Output/')
 
-# source(paste0(getwd(), "/Code/Params.R")
+# source(paste0(getwd(), "/Code/Params.R"))
 
 ###############################################################
 ############ Generate 'true' distribution #####################
