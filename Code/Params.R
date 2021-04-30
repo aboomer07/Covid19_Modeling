@@ -17,10 +17,8 @@ params[['sim_mu_variant']] <- 7
 params[['sim_var_variant']] <- 2
 params[['sim_type_variant']] <- 'gamma'
 params[['tau_m']] <- params[['study_len']]
-params[['start_variant']] <- 50
+params[['start_variant']] <- 115
 params[['sii_cross']] <- 0
 params[['infec_lim']] <- c(0, 1)
 params[['Rt_lim']] <- c(0, 3)
-
-
-
+params[['init_infec']] <- rep(1, params[['tau_m']] * params[['delta']])

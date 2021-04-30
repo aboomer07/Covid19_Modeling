@@ -209,16 +209,20 @@ dev.off()
 ##################### SI Framework ###################################
 ######################################################################
 
-si_model <- si_sim(params)
+params$R_val <- c(1.3, 1.05)
+params$R_val_variant <- 1.8
+
+# si_model <- si_sim(params)
 sii_model <- sii_sim(params)
-ssii_model <- ssii_sim(params)
+# ssii_model <- ssii_sim(params)
 
-Rt_si <- Rt_est(si_model, vals, params, deterministic = T, correct_bias = T, variant = F)
+# Rt_si <- Rt_est(si_model, vals, params, deterministic = T, correct_bias = T, variant = F)
 Rt_sii <- Rt_est(sii_model, vals, params, deterministic = T, correct_bias = T, variant = T, sep_Rt = T)
-Rt_ssii <- Rt_est(ssii_model, vals, params, deterministic = T, correct_bias = T, variant = T, sep_Rt = T, sep_S = T)
+Rt_nsr_sii <- Rt_est_nonpara(incid_sii, samps, 'nsr', params, correct_bias = T, variant = T, sep_Rt = T)
+# Rt_ssii <- Rt_est(ssii_model, vals, params, deterministic = T, correct_bias = T, variant = T, sep_Rt = T, sep_S = T)
 
-si_plot(si_model, Rt_si)
-png(paste0(outpath, "/SII_Plot.png"))
+# si_plot(si_model, Rt_si)
+png(paste0(outpath, "/SII_Plot_Rt_Constant.png"))
 sii_plot(sii_model, Rt_sii)
 dev.off()
 
