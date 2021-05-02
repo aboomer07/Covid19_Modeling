@@ -40,7 +40,7 @@ Rt_summer %>% select(date, Est_Rt) %>% na.omit() %>%
   ggplot() + geom_line(aes(x = date, y = Est_Rt)) +
   theme_minimal() +
   labs(x = '', y = 'Estimated Rt') +
-  ggsave(paste0(outpath, 'Rt_summer.png'), width = 10, height = 5)
+  ggsave(paste0(outpath, 'Rt_summer_og.png'), width = 10, height = 5)
 
 # take average and forecast next month
 params['R_val'] <- mean(Rt_summer$Est_Rt, na.rm = T)
@@ -72,7 +72,7 @@ comp_df %>% select(Date, Forecast, Actual) %>% reshape2::melt(id.vars = 'Date') 
 
 # second application: winter 2020 (november, december) continuous lockdown (?)
 
-df_win <- df %>% filter(date > as.Date('2020-11-01') & date < as.Date('2021-01-01'))
+df_win <- df %>% filter(date > as.Date('2020-10-30') & date < as.Date('2020-12-01'))
 
 # compute weekly rolling average to deal with weekend bias
 df_win <- df_win %>% mutate(
@@ -80,6 +80,11 @@ df_win <- df_win %>% mutate(
 ) %>% na.omit()
 df_win$days <- 1:nrow(df_win)
 
+params['study_len'] <- 10
+params['tau_m'] <- params$study_len
+params['sim_mu'] <- 4.8
+params['sim_var'] <- 2.8
+params['delta'] <- 1
 Rt_winter <- Rt_est(df_win, vals, params, deterministic = T, correct_bias = F, variant = F)
 Rt_winter$date = df_win$date
 Rt_winter %>% select(date, Est_Rt) %>% na.omit() %>%
@@ -89,10 +94,10 @@ Rt_winter %>% select(date, Est_Rt) %>% na.omit() %>%
   ggsave(paste0(outpath, 'Rt_winter.png'), width = 10, height = 5)
 
 # take average and forecast next month
-params['R_val'] <- mean(Rt_winter$Est_Rt, na.rm = T)
+params['R_val'] <- mean(tail(Rt_winter, 5)$Est_Rt, na.rm = T)
 params['pop'] <- 67000000
 params['init_infec'] <- list(tail(df_win, params$tau_m)$infected_day)
-params['n_days'] <- 50
+params['n_days'] <- 30
 
 sim_winter <- si_sim(params)
 
@@ -102,9 +107,9 @@ dev.off()
 
 actual_cases <- df %>%
   mutate(actual_cases = zoo::rollmean(infected_day, k = 7, fill = NA)) %>% na.omit() %>%
-  filter(date > as.Date('2021-01-01')) %>% head(., 30)
+  filter(date > as.Date('2020-12-01')) %>% head(., 20)
 
-comp_df <- sim_winter %>% select(days, infected_day) %>% filter(days > 20) %>%
+comp_df <- sim_winter %>% select(days, infected_day) %>% filter(days > 10) %>%
   cbind(actual_cases %>% select(date, actual_cases))
 colnames(comp_df) <- c('Days', 'Forecast', 'Date', 'Actual')
 
@@ -157,6 +162,3 @@ summary(ur.df(Rt_winter$Est_Rt %>% na.omit(), lags=2, type='drift'))
 
 kpss.test(Rt_summer$Est_Rt %>% na.omit(), null='Level', lshort=TRUE)
 kpss.test(Rt_winter$Est_Rt %>% na.omit(), null='Level', lshort=TRUE)
-
-
-
