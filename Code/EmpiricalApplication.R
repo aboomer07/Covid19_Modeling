@@ -19,106 +19,83 @@ colnames(df) <- c('date', 'cum_cases', 'infected_day') # need correct col names 
 
 # 2020-06-02 must be a data issue as cumulative cases drop by roughly 700
 
-df_sum <- df %>% filter(date > as.Date('2020-07-15') & date < as.Date('2020-10-01'))
-
-# compute weekly rolling average to deal with weekend bias
-df_sum <- df_sum %>% mutate(
-  infected_day = zoo::rollmean(infected_day, k = 7, fill = NA)
-) %>% na.omit()
-df_sum$days <- 1:nrow(df_sum)
-
-
-# simulate serial interval study
-serinfect <- samp_pois(params)
-samps <- serinfect$daily
-
-vals <- serial_ests(samps) # we are not using these values but we need it as an input (sorry ugly code my bad)
-
-Rt_summer <- Rt_est(df_sum, vals, params, deterministic = T, correct_bias = F, variant = F)
-Rt_summer$date <- df_sum$date
-Rt_summer %>% select(date, Est_Rt) %>% na.omit() %>%
-  ggplot() + geom_line(aes(x = date, y = Est_Rt)) +
-  theme_minimal() +
-  labs(x = '', y = 'Estimated Rt') +
-  ggsave(paste0(outpath, 'Rt_summer_og.png'), width = 10, height = 5)
-
-# take average and forecast next month
-params['R_val'] <- mean(Rt_summer$Est_Rt, na.rm = T)
-params['pop'] <- 67000000
-params['init_infec'] <- list(tail(df_sum, params$tau_m)$infected_day)
-params['n_days'] <- 50
-
-sim_summer <- si_sim(params)
-
-pdf(file = paste0(outpath, "SI_plot_summer.pdf"), width=4, height=7)
-si_plot_detail(sim_summer)
-dev.off()
-
-actual_cases <- df %>%
-  mutate(actual_cases = zoo::rollmean(infected_day, k = 7, fill = NA)) %>% na.omit() %>%
-  filter(date > as.Date('2020-10-01')) %>% head(., 30)
-
-comp_df <- sim_summer %>% select(days, infected_day) %>% filter(days > 20) %>%
-  cbind(actual_cases %>% select(date, actual_cases))
-colnames(comp_df) <- c('Days', 'Forecast', 'Date', 'Actual')
-
-comp_df %>% select(Date, Forecast, Actual) %>% reshape2::melt(id.vars = 'Date') %>%
-  ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
-  theme_minimal() +
-  labs(x = '', y = '') +
-  theme(legend.title=element_blank()) +
-  ggsave(paste0(outpath, 'Forecast_summer.png'), width = 10, height = 5)
-
-
-# second application: winter 2020 (november, december) continuous lockdown (?)
-
-df_win <- df %>% filter(date > as.Date('2020-10-30') & date < as.Date('2020-12-01'))
-
-# compute weekly rolling average to deal with weekend bias
-df_win <- df_win %>% mutate(
-  infected_day = zoo::rollmean(infected_day, k = 7, fill = NA)
-) %>% na.omit()
-df_win$days <- 1:nrow(df_win)
-
+# set global params
 params['study_len'] <- 10
 params['tau_m'] <- params$study_len
 params['sim_mu'] <- 4.8
 params['sim_var'] <- 2.8
 params['delta'] <- 1
-Rt_winter <- Rt_est(df_win, vals, params, deterministic = T, correct_bias = F, variant = F)
-Rt_winter$date = df_win$date
-Rt_winter %>% select(date, Est_Rt) %>% na.omit() %>%
+
+
+apply_rt_est <- function(data, start_date, end_date, params, plotname){
+  dat <- data %>% filter(date > as.Date(start_date) & date < as.Date(end_date))
+
+  # compute weekly rolling average to deal with weekend bias
+  dat <- dat %>% mutate(
+    infected_day = zoo::rollmean(infected_day, k = 7, fill = NA)) %>% na.omit()
+  dat$days <- 1:nrow(dat)
+
+  # simulate serial interval study
+  serinfect <- samp_pois(params)
+  samps <- serinfect$daily
+
+  vals <- serial_ests(samps) # we are not using these values but we need it as an input (sorry ugly code my bad)
+
+  Rt <- Rt_est(dat, vals, params, deterministic = T, correct_bias = F, variant = F)
+  Rt$date <- dat$date
+  Rt %>% select(date, Est_Rt) %>% na.omit() %>%
   ggplot() + geom_line(aes(x = date, y = Est_Rt)) +
   theme_minimal() +
   labs(x = '', y = 'Estimated Rt') +
-  ggsave(paste0(outpath, 'Rt_winter.png'), width = 10, height = 5)
+  ggsave(paste0(outpath, plotname, '.png'), width = 10, height = 5)
 
-# take average and forecast next month
-params['R_val'] <- mean(tail(Rt_winter, 5)$Est_Rt, na.rm = T)
-params['pop'] <- 67000000
-params['init_infec'] <- list(tail(df_win, params$tau_m)$infected_day)
-params['n_days'] <- 30
+  return(Rt)
+}
 
-sim_winter <- si_sim(params)
+forecast_rt <- function(data, Rt_df, start_date, end_date, params, Rt_window, days_ahead, plotname){
+  dat <- data %>% filter(date > as.Date(start_date) & date < as.Date(end_date))
 
-pdf(file = paste0(outpath, "SI_plot_winter.pdf"), width=4, height=7)
-si_plot_detail(sim_winter)
-dev.off()
+  # compute weekly rolling average to deal with weekend bias
+  dat <- dat %>% mutate(
+    infected_day = zoo::rollmean(infected_day, k = 7, fill = NA)) %>% na.omit()
+  dat$days <- 1:nrow(dat)
 
-actual_cases <- df %>%
-  mutate(actual_cases = zoo::rollmean(infected_day, k = 7, fill = NA)) %>% na.omit() %>%
-  filter(date > as.Date('2020-12-01')) %>% head(., 20)
+  # take average and forecast next month
+  params['R_val'] <- mean(tail(Rt_df, Rt_window)$Est_Rt, na.rm = T)
+  params['pop'] <- 67000000 # roughly french population
+  params['init_infec'] <- list(tail(dat, params$tau_m)$infected_day)
+  params['n_days'] <- days_ahead + params$tau_m
 
-comp_df <- sim_winter %>% select(days, infected_day) %>% filter(days > 10) %>%
-  cbind(actual_cases %>% select(date, actual_cases))
-colnames(comp_df) <- c('Days', 'Forecast', 'Date', 'Actual')
+  sim <- si_sim(params)
 
-comp_df %>% select(Date, Forecast, Actual) %>% reshape2::melt(id.vars = 'Date') %>%
-  ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
-  theme_minimal() +
-  labs(x = '', y = '') +
-  theme(legend.title=element_blank()) +
-  ggsave(paste0(outpath, 'Forecast_winter.png'), width = 10, height = 5)
+  actual_cases <- data %>%
+    mutate(actual_cases = zoo::rollmean(infected_day, k = 7, fill = NA)) %>% na.omit() %>%
+    filter(date > tail(Rt_df, 1)$date) %>% head(., days_ahead)
+
+  comp_df <- sim %>% select(days, infected_day) %>% filter(days > params$tau_m) %>%
+    cbind(actual_cases %>% select(date, actual_cases))
+  colnames(comp_df) <- c('Days', 'Forecast', 'Date', 'Actual')
+
+  comp_df %>% select(Date, Forecast, Actual) %>% reshape2::melt(id.vars = 'Date') %>%
+    ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
+    theme_minimal() +
+    labs(x = '', y = '') +
+    theme(legend.title=element_blank()) +
+    ggsave(paste0(outpath, plotname, '.png'), width = 10, height = 5)
+
+  return(sim)
+
+}
+
+# autumn
+Rt_aut <- apply_rt_est(data = df, start_date = '2020-07-15', end_date = '2020-10-01', params = params, plotname = 'Rt_autumn')
+Inf_aut <- forecast_rt(data = df, Rt_df = Rt_aut, start_date = '2020-07-15', end_date = '2020-10-01',
+                       params = params, Rt_window = 15, days_ahead = 20, plotname = 'Forecast_autumn')
+
+# winter
+Rt_win <- apply_rt_est(data = df, start_date = '2020-10-30', end_date = '2020-12-01', params = params, plotname = 'Rt_winter')
+Inf_win <- forecast_rt(data = df, Rt_df = Rt_win, start_date = '2020-10-30', end_date = '2020-12-01',
+                       params = params, Rt_window = 5, days_ahead = 20, plotname = 'Forecast_winter')
 
 
 
