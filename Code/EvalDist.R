@@ -60,7 +60,7 @@ SI_plot_distribution <- function(data){
 
 	#Show distribution of estimates 
 	#pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, "_Delta", delta, ".pdf"))
-	#par(mfrow = c(2,2))
+	par(mfrow = c(2,2))
 
 	#Alpha hat 
 	hist(estimates$shape_hat, nclass = 20, xlab = "", col = "aliceblue",
