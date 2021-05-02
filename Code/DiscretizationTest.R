@@ -7,42 +7,68 @@ library(zoo)
 
 gen_distribution <- function(study_len, mean, variance, type, delta) {
 
-  k <- seq(0, study_len, length.out = study_len * delta)
+  r <- 0:(study_len*delta)
+  r <- r/delta
 
   if (type == 'norm') {
     a <- mean
     b <- variance
     #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    omega <- dnorm(k, a, b)
+    omega <- dnorm(r, a, sqrt(b))
   }
 
   if (type == 'lnorm') {
     a <- log(mean^2 / (sqrt(mean^2 + variance)))
     b <- log(1 + variance / mean^2)
     #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    omega <- dlnorm(k,a,b)
+    omega <- dlnorm(r,a,sqrt(b))
   }
 
   if (type == 'gamma') {
-    a <- mean^2 / variance
-    b <- (mean / variance)
+    a <- (mean^2)/variance
+    b <- mean/variance
     # b <- 1/b
     #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    omega <- dgamma(k, a, b)
+    omega <- dgamma(r, a, b)
   }
 
   if (type == 'weibull') {
-    a <- as.numeric(weibullpar(mean, variance)[1])
-    b <- as.numeric(weibullpar(mean, variance)[2])
+    a <- as.numeric(weibullpar(mean, sqrt(variance))[1])
+    b <- as.numeric(weibullpar(mean, sqrt(variance))[2])
     #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    omega <- dweibull(k, a, b)
+    omega <- dweibull(r, a, b)
   }
 
-  distribution <- list(a = a, b = b, omega = omega)
+  distribution <- list(a = a, b = b, omega = omega, range = r)
   return(distribution)
 }
 
-omega <- gen_distribution(20, 7, 2, "weibull", 24)
+
+#-----------------------------------------------------------------#
+#--------------------------- Some checks -------------------------#
+#-----------------------------------------------------------------#
+delta = 24
+omega <- gen_distribution(20, 7, 2, "weibull", delta)
+plot(omega$omega~omega$range)
+#Check if integral is 1 
+area <- c()
+for (i in 1:(length(omega$range)-1)){
+  area[i] <- (omega$range[i+1]-omega$range[i])*omega$omega[i]
+}
+sum(area)  #should be 1
+
+#Check if mean and variance are the same as the inputted ones
+prod <- c()
+for (i in 1:length(omega$range)){
+  prod[i] <- omega$range[i]*omega$omega[i]
+}
+sum(prod)/delta #should be 7
+
+squares <- c()
+for (i in 1:length(omega$range)){
+  squares[i] <- omega$range[i]^2*omega$omega[i]
+}
+(sum(squares)/delta)-(sum(prod)/delta)^2 #should be 2
 
 
 ###############################################################
@@ -75,7 +101,7 @@ samp_pois <- function(params, increasingR = TRUE) {
   omega_sum <- zoo::rollapply(omega$omega, delta, sum, by = delta)
   Lambda <- c() 
   for (d in 1:study_len){
-  Lambda[d] <- Rt[d] * omega_sum[d] / delta
+  Lambda[d] <- Rt * zoo::rollapply(omega$omega,  / delta
   }
 
   func <- function(t) rep(t, sum(rpois(sims, Lambda[t])))
