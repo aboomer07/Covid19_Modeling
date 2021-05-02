@@ -11,8 +11,6 @@ source(paste0(getwd(), "/Code/Params.R"))
 
 library(urca)
 
-
-
 # first application: late summer 2020 (august, sept)
 df <- read.csv2(paste0(imppath, 'open_stats_coronavirus.csv')) %>% filter(nom == 'france') %>% select(date, cas) %>%
   mutate(new_cases = cas-lag(cas),
@@ -37,10 +35,12 @@ samps <- serinfect$daily
 vals <- serial_ests(samps) # we are not using these values but we need it as an input (sorry ugly code my bad)
 
 Rt_summer <- Rt_est(df_sum, vals, params, deterministic = T, correct_bias = F, variant = F)
-Rt_summer$date = df_sum$date
+Rt_summer$date <- df_sum$date
 Rt_summer %>% select(date, Est_Rt) %>% na.omit() %>%
   ggplot() + geom_line(aes(x = date, y = Est_Rt)) +
-  ggsave(paste0(outpath, 'Rt_summer.png'))
+  theme_minimal() +
+  labs(x = '', y = 'Estimated Rt') +
+  ggsave(paste0(outpath, 'Rt_summer.png'), width = 10, height = 5)
 
 # take average and forecast next month
 params['R_val'] <- mean(Rt_summer$Est_Rt, na.rm = T)
@@ -64,12 +64,15 @@ colnames(comp_df) <- c('Days', 'Forecast', 'Date', 'Actual')
 
 comp_df %>% select(Date, Forecast, Actual) %>% reshape2::melt(id.vars = 'Date') %>%
   ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
-  ggsave(paste0(outpath, 'Forecast_summer.png'))
+  theme_minimal() +
+  labs(x = '', y = '') +
+  theme(legend.title=element_blank()) +
+  ggsave(paste0(outpath, 'Forecast_summer.png'), width = 10, height = 5)
 
 
 # second application: winter 2020 (november, december) continuous lockdown (?)
 
-df_win <- df %>% filter(date > as.Date('2020-10-15') & date < as.Date('2021-01-01'))
+df_win <- df %>% filter(date > as.Date('2020-11-01') & date < as.Date('2021-01-01'))
 
 # compute weekly rolling average to deal with weekend bias
 df_win <- df_win %>% mutate(
@@ -81,7 +84,9 @@ Rt_winter <- Rt_est(df_win, vals, params, deterministic = T, correct_bias = F, v
 Rt_winter$date = df_win$date
 Rt_winter %>% select(date, Est_Rt) %>% na.omit() %>%
   ggplot() + geom_line(aes(x = date, y = Est_Rt)) +
-  ggsave(paste0(outpath, 'Rt_winter.png'))
+  theme_minimal() +
+  labs(x = '', y = 'Estimated Rt') +
+  ggsave(paste0(outpath, 'Rt_winter.png'), width = 10, height = 5)
 
 # take average and forecast next month
 params['R_val'] <- mean(Rt_winter$Est_Rt, na.rm = T)
@@ -105,7 +110,10 @@ colnames(comp_df) <- c('Days', 'Forecast', 'Date', 'Actual')
 
 comp_df %>% select(Date, Forecast, Actual) %>% reshape2::melt(id.vars = 'Date') %>%
   ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
-  ggsave(paste0(outpath, 'Forecast_winter.png'))
+  theme_minimal() +
+  labs(x = '', y = '') +
+  theme(legend.title=element_blank()) +
+  ggsave(paste0(outpath, 'Forecast_winter.png'), width = 10, height = 5)
 
 
 
@@ -142,8 +150,6 @@ Rt_var %>% select(Date, Est_Rt, Est_Rt1, Est_Rt2) %>% na.omit() %>%
   reshape2::melt(id.vars = 'Date') %>%
   ggplot() + geom_line(aes(x = Date, y = value, color = variable)) +
   ggsave(paste0(outpath, 'Rt_variants.png'))
-
-sim_winter <- si_sim(params)
 
 
 summary(ur.df(Rt_summer$Est_Rt %>% na.omit(), lags=2, type='drift'))

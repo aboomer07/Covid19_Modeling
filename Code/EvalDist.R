@@ -137,7 +137,7 @@ SI.bias <- function(data){
 	avg_mean_sd <- data$avg_params[6]
 	avg_var_hat <- data$avg_params[7]
 	avg_var_sd <- data$avg_params[8]
-)
+}
 
 
 serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpara = F){
