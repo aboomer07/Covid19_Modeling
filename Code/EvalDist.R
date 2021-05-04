@@ -60,7 +60,7 @@ SI_plot_distribution <- function(data){
 
 	#Show distribution of estimates 
 	#pdf(file = paste0(outpath, "SerialEst_", sim_type, "_S", simulations, "_Delta", delta, ".pdf"))
-	#par(mfrow = c(2,2))
+	par(mfrow = c(2,2))
 
 	#Alpha hat 
 	hist(estimates$shape_hat, nclass = 20, xlab = "", col = "aliceblue",
@@ -137,7 +137,7 @@ SI.bias <- function(data){
 	avg_mean_sd <- data$avg_params[6]
 	avg_var_hat <- data$avg_params[7]
 	avg_var_sd <- data$avg_params[8]
-)
+}
 
 
 serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpara = F){
