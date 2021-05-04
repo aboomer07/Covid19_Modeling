@@ -6,7 +6,7 @@ params[['num_people']] <- 30
 params[['simulations']] <- 1000
 params[['sim_type']] <- 'gamma'
 params[['n_days']] <- 300
-params[['delta']] <- 24*60
+params[['delta']] <- 1
 params[['n']] <- params[['tau_m']] * params[['delta']]
 
 params[['R_val']] <- 1.4
@@ -23,3 +23,5 @@ params[['sii_cross']] <- 0
 params[['infec_lim']] <- c(0, 1)
 params[['Rt_lim']] <- c(0, 3)
 params[['init_infec']] <- rep(1, params[['tau_m']] * params[['delta']])
+params[['init_infec_var']] <- rep(1, params[['tau_m']] * params[['delta']])
+
