@@ -24,43 +24,75 @@ outpath <- paste0(getwd(), '/Output/')
 # helper function for gamma dist
 # cdf_gamma <- function(k, a, b) stats::pgamma(k, shape = a, rate = b)
 
+gen_distribution <- function(study_len, mean, variance, type, delta) {
 
-gen_distribution <- function(k, mean, variance, type, delta) {
-
-  k <- 1:(k*delta)
+  r <- 0:(study_len*delta-1)
+  r <- r/delta
 
   if (type == 'norm') {
-    a <- mean * delta
-    b <- variance * delta
+    a <- mean
+    b <- variance
     #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    omega <- dnorm(k, a, b)
+    omega <- dnorm(r, a, sqrt(b))
   }
 
   if (type == 'lnorm') {
-    a <- log(mean^2 / (sqrt(mean^2 + variance))) + log(delta)
+    a <- log(mean^2 / (sqrt(mean^2 + variance)))
     b <- log(1 + variance / mean^2)
     #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    omega <- dlnorm(k, a,b)
+    omega <- dlnorm(r,a,sqrt(b))
   }
 
   if (type == 'gamma') {
-    a <- mean^2 / variance
-    b <- (mean / variance) / delta
+    a <- (mean^2)/variance
+    b <- mean/variance
     # b <- 1/b
     #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    omega <- dgamma(k, a, b)
+    omega <- dgamma(r, a, b)
   }
 
   if (type == 'weibull') {
-    a <- as.numeric(weibullpar(mean, variance)[1])
-    b <- as.numeric(weibullpar(mean, variance)[2])*delta
+    a <- as.numeric(weibullpar(mean, sqrt(variance))[1])
+    b <- as.numeric(weibullpar(mean, sqrt(variance))[2])
     #print(paste("Distribution:", type, "Serial interval parameters: a =",a, "b =", b))
-    omega <- dweibull(k, a, b)
+    omega <- dweibull(r, a, b)
   }
 
-  distribution <- list(a = a, b = b, omega = omega)
+  distribution <- list(a = a, b = b, omega = omega, range = r)
   return(distribution)
 }
+
+###############################################################
+#################### Generate 'true' Rt #######################
+###############################################################
+
+Rt_gen <- function(Rt_type, n_days){
+
+  if (Rt_type == "constant"){
+    Rt <- rep(1.8, n_days)
+  }
+
+  if (Rt_type == "increasing"){
+    Rt <- seq(1.5, 3, length.out = n_days)
+  }
+
+  if (Rt_type == "decreasing"){
+    Rt <- seq(3, 1.5, length.out = n_days)
+  }
+
+  if (Rt_type == "panic"){
+    panic_func <- function(x){1.079069 + 0.227532*x - 0.006662227*x^2 + 0.00006154452*x^3 - 1.795452e-7*x^4}
+    Rt <- panic_func(1:n_days)
+  }
+
+  if (Rt_type == "cave"){
+    cave_func <- function(x){0.5909007 + 0.1099206*x - 0.0008213363*x^2}
+    Rt <- cave_func(1:n_days)
+  }
+
+  return(Rt)
+}
+
 
 
 ###############################################################
