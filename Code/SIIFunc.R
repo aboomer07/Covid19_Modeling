@@ -123,6 +123,10 @@ sii_sim <- function(params) {
   R2 <- params$R_val_variant
   start_variant <- params$start_variant
   sim_type2 <- params$sim_type_variant
+  init_infec <- params$init_infec
+  init_infec_var <- params$init_infec_var
+
+
 
   start <- ((tau_m) * delta) + 1
 
@@ -136,10 +140,10 @@ sii_sim <- function(params) {
   data$R_t2 <- rep(R2, each = (delta * days / length(R2)))
 
   # start of the two pandemics (1 assumed to start in beginning, 2 is variable)
-  data$I1[1:(tau_m * delta)] <- 5
+  data$I1[1:(tau_m * delta)] <- init_infec
   data[1:(start_variant * delta),]$I2 <- 0
-  data$I2[(start_variant * delta+1):((start_variant + tau_m) * delta)] <- 5
-  data$infected_day <- data$I1
+  data$I2[(start_variant * delta+1):((start_variant + tau_m) * delta)] <- init_infec_var
+  data$infected_day <- data$I1 + data$I2
   data$S[1] <- params$pop
   for (t in 2:(tau_m * delta)){
     data$S[t] <- data$S[t-1] - data$I1[t-1] - data$I2[t-1]
@@ -156,7 +160,7 @@ sii_sim <- function(params) {
 
       I1_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$I1
       data$I1[t] <- data$R_t1[t] * sum(I1_vec * omega1) * data$S[t] / params$pop
-      data$infected_day[t] <- data$I1[t]
+      data$infected_day[t] <- data$I1[t] + data$I2[t]
     }
 
     else{
