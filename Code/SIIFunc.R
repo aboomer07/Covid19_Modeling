@@ -3,9 +3,9 @@
 # Created by: Luca Poll
 # Created on: 4/5/2021
 
-# source(paste0(getwd(), "/Code/Params.R"))
-# source(paste0(getwd(), "/Code/SimFunc.R"))
-# source(paste0(getwd(), "/Code/EvalDist.R"))
+source(paste0(getwd(), "/Code/Params.R"))
+source(paste0(getwd(), "/Code/SimFunc.R"))
+source(paste0(getwd(), "/Code/EvalDist.R"))
 
 si_sim <- function(params) {
   # unpack variables
