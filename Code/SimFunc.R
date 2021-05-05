@@ -9,6 +9,7 @@ library(data.table)
 library(np)
 library(KernSmooth)
 library(mixdist)
+library(zoo)
 library(msm)
 library(ggridges)
 #setwd("..")
@@ -66,26 +67,26 @@ gen_distribution <- function(study_len, mean, variance, type, delta) {
 #################### Generate 'true' Rt #######################
 ###############################################################
 
-Rt_gen <- function(Rt_type, n_days){
+Rt_gen <- function(R_type, n_days){
 
-  if (Rt_type == "constant"){
+  if (R_type == "constant"){
     Rt <- rep(1.8, n_days)
   }
 
-  if (Rt_type == "increasing"){
+  else if (R_type == "increasing"){
     Rt <- seq(1.5, 3, length.out = n_days)
   }
 
-  if (Rt_type == "decreasing"){
+  else if (R_type == "decreasing"){
     Rt <- seq(3, 1.5, length.out = n_days)
   }
 
-  if (Rt_type == "panic"){
+  else if (R_type == "panic"){
     panic_func <- function(x){1.079069 + 0.227532*x - 0.006662227*x^2 + 0.00006154452*x^3 - 1.795452e-7*x^4}
     Rt <- panic_func(1:n_days)
   }
 
-  if (Rt_type == "cave"){
+  else if (R_type == "cave"){
     cave_func <- function(x){0.5909007 + 0.1099206*x - 0.0008213363*x^2}
     Rt <- cave_func(1:n_days)
   }
@@ -94,51 +95,45 @@ Rt_gen <- function(Rt_type, n_days){
 }
 
 
-
 ###############################################################
 ########### Simulate Serial Interval Data #####################
 ###############################################################
 
-samp_pois <- function(params) {
+samp_pois <- function(params){
 
   R_val <- params[['R_val']]; study_len <- params[['study_len']]
   num_people <- params[['num_people']]; sim_mu <- params[['sim_mu']]
   sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
-  delta <- params[['delta']]
+  delta <- params[['delta']]; R_type <- params[['R_type']]
+  n_days <- params[["n_days"]]
 
-  Rt <- rep(R_val, each = (study_len*delta/length(R_val)))
+  Rt <- Rt_gen(R_type, n_days)
+  Rt <- rep(mean(Rt[study_len:(2*study_len)]), study_len)
+
   sims <- num_people
 
   # Generate Distribution for serial interval
   omega <- gen_distribution(study_len, sim_mu, sim_var, sim_type, delta)
-  #Generate lambda parameter for the poisson draw
-	Lambda <- Rt * omega$omega
 
-  range <- 1:(study_len*delta)
+  # Generate daily Lambda
+  omega_sum <- zoo::rollapply(omega$omega, width = delta, FUN = sum, by = delta)
+  Lambda <- Rt * omega_sum /delta
 
+  # repeat the respective day of infection as many times as there are infections
   func <- function(t) rep(t, sum(rpois(sims, Lambda[t])))
-  samplescont <- do.call(c, sapply(range, func))
-
-  # Make infections daily
-  daily <- c()
-  day <- seq(1, study_len*delta+2, delta)
-  
-  for (d in 1:length(day)) {
-    for (i in 1:length(samplescont)) {
-      if ((samplescont[i] >= day[d]) & (samplescont[i] < day[d+1])) {
-        daily <- c(daily, d)
-      }
-    }
-  }
+  samplesDaily <- do.call(c, sapply(1:study_len, func))
 
   # Get output that includes true distribution and simulated secondary cases
-  serinfect <- list(samplescont = samplescont, daily = daily, dist = omega$omega)
+  serinfect <- list(daily = samplesDaily, dist = omega$omega)
   return(serinfect)
+
 }
- 
+
+
 ###############################################################
 ################ Estimate Serial Interval #####################
 ###############################################################
+
 serial_ests <- function(samps) {
   num_vars <- 5
   params <- list()
@@ -172,39 +167,47 @@ serial_ests_nonpara <- function(samps, range, bandwidth) {
 ###############################################################
 ################ Simulate Incidence Data ######################
 ###############################################################
+
 nour_sim_data <- function(params) {
 
   R <- params[['R_val']]; sim_mu <- params[['sim_mu']]
   sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
   delta <- params[['delta']]; tau_m <- params[['tau_m']]
-  days <- params[['n_days']]
+  n_days <- params[['n_days']]; init_infec <- params[['init_infec']]
+  R_type <- params[['R_type']]
 
-  data <- data.frame(matrix(nrow = days * delta, ncol = 4))
-  colnames(data) <- c('t', 'days', 'R_t', 'infected')
-  data$t <- 1:dim(data)[1]
-  data$days <- rep(1:days, each = delta)
-  data$infected <- NA
-  data$infected[1:(tau_m * delta)] <- round(seq(10, 100, length.out = tau_m * delta))
-  data$R_t <- rep(R, each = (delta * days / length(R)))
+  # Setup
+  data <- data.frame(matrix(nrow = n_days * delta, ncol = 4))
+  colnames(data) <- c('index', 'days', 'R_t', 'infected')
+  data$index <- 1:dim(data)[1]
+  data$days <- rep(1:n_days, each = delta)
+  data$R_t <- rep(Rt_gen(R_type, n_days), each = delta)
 
-  omega <- rev(gen_distribution(tau_m, sim_mu, sim_var, sim_type, delta))
+  # Generate cases for Burn-in
+  data$infected[1:(tau_m * delta)] <- init_infec
+
+  omega <- rev(gen_distribution(tau_m, sim_mu, sim_var, sim_type, delta)$omega)
 
   # simulate outbreak
+  # start of outbreak
   start <- ((tau_m) * delta) + 1
 
-  for (t in start:dim(data)[1]) {
-    I_vec <- data[data$t %in% (t - tau_m*delta):(t - 1),]$infected
-    R_mean <- mean(data[which(data$t == t),]$R_t)
-    total_infec <- sum(I_vec * omega)
+  pb <- txtProgressBar(min = start, max = dim(data)[1], style = 3)
+  for (n in start:dim(data)[1]) {
 
-    infec <- R_mean * total_infec
-    data[which(data$t == t),]$infected <- infec
+    I_vec <- data[data$index %in% (n - tau_m*delta):(n - 1),"infected"]
+    total_infec <- sum(I_vec * omega) / delta
+    I_dot <- data$R_t[n] * total_infec
+
+    data$infected[n] <- I_dot
+
+    #setTxtProgressBar(pb, n)
   }
 
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
-    summarise(infected_day = round(mean(infected)), R_val = mean(R_t))
+    summarise(infected_day = round(sum(infected)), R_val = mean(R_t))
 
   return(daily_infec)
 }
@@ -351,12 +354,12 @@ plot_nonpara_eval <- function(true_dist, est_dist) {
 ###############################################################
 #################### Estimate Rt ##############################
 ###############################################################
+
 Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, variant = F, sep_Rt = F, sep_S = F) {
-  n_days <- params[['n_days']]
-  start <- params[['study_len']]
-  type <- params[['sim_type']]
-  start_variant <- params$start_variant
-  tau_m <- params$tau_m
+  
+  n_days <- params[['n_days']]; start <- params[['study_len']]
+  type <- params[['sim_type']]; start_variant <- params[["start_variant"]]
+  tau_m <- params[['tau_m']]; R_type <- params[['R_type']]
 
   if (sep_Rt) {
     data <- data.frame(matrix(nrow = nrow(df), ncol = 7))
@@ -370,7 +373,7 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
     data$Rt2 <- rep(df$R2_val)
   }
   else{
-     data$Rt <- rep(df$R_val)
+     data$Rt <- Rt_gen(R_type, n_days)
   }
 
   data$Date <- seq(1, nrow(df))

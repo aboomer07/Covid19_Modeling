@@ -7,7 +7,7 @@ library(zoo)
 
 gen_distribution <- function(study_len, mean, variance, type, delta) {
 
-  r <- 0:(study_len*delta)
+  r <- 0:(study_len*delta-1)
   r <- r/delta
 
   if (type == 'norm') {
@@ -116,22 +116,20 @@ samp_pois <- function(params, increasingR = TRUE) {
 }
 
 
-
-
-
 nour_sim_data <- function(params) {
 
   R <- params[['R_val']]; sim_mu <- params[['sim_mu']]
   sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
   delta <- params[['delta']]; tau_m <- params[['tau_m']]
   days <- params[['n_days']]; init_infec <- params$init_infec
+  R_type <- params[['R_type']]
 
   # Setup
   data <- data.frame(matrix(nrow = days * delta, ncol = 4))
   colnames(data) <- c('index', 't', 'R_t', 'I_dot')
   data$index <- 1:dim(data)[1]
   data$t <- rep(1:days, each = delta)
-  data$R_t <- rep(R, each = (delta * days / length(R))) #TODO
+  data$R_t <- rep(Rt_gen(R_type, days), each = delta)
 
   # Generate cases for Burn-in
   data$infected[1:(tau_m * delta)] <- init_infec

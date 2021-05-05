@@ -121,25 +121,6 @@ SI_plot_distribution <- function(data){
 }
 
 
-SI.bias <- function(data){
-
-	R_val <- params[['R_val']]; study_len <- params[['study_len']]
-  	num_people <- params[['num_people']]; sim_mu <- params[['sim_mu']]
-  	sim_var <- params[['sim_var']]; sim_type <- params[['sim_type']]
-  	delta <- params[['delta']]; simulations <- params[['simulations']]
-
-	estimates <- data$distribution
-	avg_shape_hat <- data$avg_params[1]
-	avg_shape_sd <- data$avg_params[2]
-	avg_rate_hat <- data$avg_params[3]
-	avg_rate_sd <- data$avg_params[4]
-	avg_mean_hat <- data$avg_params[5]
-	avg_mean_sd <- data$avg_params[6]
-	avg_var_hat <- data$avg_params[7]
-	avg_var_sd <- data$avg_params[8]
-}
-
-
 serial_est_plot <- function(study_len, sim_mean, sim_var, sim_type, vals, nonpara = F){
 
 	sim_mean <- params[['sim_mu']]; sim_var <- params[['sim_var']]; 
