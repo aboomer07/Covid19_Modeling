@@ -480,8 +480,9 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
 }
 
 Rt_est_nonpara <- function(df, samps, bw, params, correct_bias = F, variant = F) {
-  start <- params[['study_len']]
-  n_days <- params[['n_days']]
+  start <- params$study_len +1
+  n_days <- params$n_days
+  study_len <- params$study_len
   data <- data.frame(matrix(nrow = n_days, ncol = 3))
   names(data) <- c('Date', 'Rt', 'Est_Rt')
 
@@ -497,16 +498,16 @@ Rt_est_nonpara <- function(df, samps, bw, params, correct_bias = F, variant = F)
   }
 
   for (i in start:nrow(data)) {
-    if (data[i,]$Date <= start) {
-      data[i,]$Est_Rt <- NA
+    if (data$Date[i] < start) {
+      data$Est_Rt[i] <- NA
     }
     else {
-      t <- data[i,]$Date
+      t <- data$Date[i]
 
-      dist <- rev(serial_ests_nonpara(samps, range = c(1, (t - 1)), bandwidth = bw)$y)
+      dist <- rev(serial_ests_nonpara(samps, range = c(1, study_len), bandwidth = bw)$y)
       I <- df[which(df$days == t),]$infected_day
-      I_window <- df[df$days %in% 1:(t - 1),]$infected_day
-      data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
+      I_window <- df[df$days %in% (t - study_len):(t - 1),"infected_day"]
+      data$Est_Rt[i] <- (I) / (sum(I_window * dist))
     }
   }
   if (correct_bias){
