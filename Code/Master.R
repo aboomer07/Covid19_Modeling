@@ -62,7 +62,6 @@ dev.off()
 ############## Estimate Serial Interval ##############################
 ######################################################################
 
-
 vals <- serial_ests(samps) # here we obtain the params for Rt_est
 
 #estimates are sensitive to num_people, as should be!
@@ -98,36 +97,178 @@ dev.off()
 # fourth: wibull true process, varying Rt
 
 # simulate outbreaks
-params[["R_val"]] <- 1.7
-incid_si_gamma_const <- si_sim(params)
+tot_len <- params$n_days * params$delta
 
-params[["R_val"]] <- c(1.7, 0.9, 2.5)
-incid_si_gamma_var <- si_sim(params)
+params[["R_val"]] <- 1.4
+params[['R_val_variant']] <- 1.9
+incid_si_gamma_const <- si_sim(params)
+incid_sii_gamma_const <- sii_sim(params)
+
+Rt_si_determ_const <- Rt_est(incid_si_gamma_const, vals, params, deterministic = T, correct_bias = T, variant = F)
+Rt_si_sto_const <- Rt_est(incid_si_gamma_const, vals, params, deterministic = F, correct_bias = T, variant = F)
+Rt_sii_determ_const <- Rt_est(incid_sii_gamma_const, vals, params, deterministic = T, correct_bias = T, variant = T)
+Rt_sii_sto_const <- Rt_est(incid_sii_gamma_const, vals, params, deterministic = F, correct_bias = T, variant = T)
+
+pdf(file = paste0(outpath, "Outbreak_SI_const_gamma.pdf"), width=4, height=7)
+si_plot_detail(incid_si_gamma_const)
+dev.off()
+
+pdf(file = paste0(outpath, "CompareRt_SI_determ_const.pdf"), height = 4, width=8)
+compare_rt(Rt_si_determ_const, params)
+dev.off()
+pdf(file = paste0(outpath, "CompareRt_SI_sto_const.pdf"), height = 4, width=8)
+compare_rt(Rt_si_sto_const, params)
+dev.off()
+
+pdf(file = paste0(outpath, "Outbreak_SII_const_gamma_determ.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_const, Rt_sii_determ_const)
+dev.off()
+pdf(file = paste0(outpath, "Outbreak_SII_const_gamma_sto.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_const, Rt_sii_sto_const)
+dev.off()
+
+params[['R_val']] <- seq(1, 2.2, by=1.2/tot_len)
+params[['R_val']] <- params[['R_val']][2:length(params[['R_val']])]
+params[['R_val_variant']] <- 1.9
+incid_si_gamma_inc <- si_sim(params)
+incid_sii_gamma_inc <- sii_sim(params)
+
+Rt_si_determ_inc <- Rt_est(incid_si_gamma_inc, vals, params, deterministic = T, correct_bias = T, variant = F)
+Rt_si_sto_inc <- Rt_est(incid_si_gamma_inc, vals, params, deterministic = F, correct_bias = T, variant = F)
+Rt_sii_determ_inc <- Rt_est(incid_sii_gamma_inc, vals, params, deterministic = T, correct_bias = T, variant = T)
+Rt_sii_sto_inc <- Rt_est(incid_sii_gamma_inc, vals, params, deterministic = F, correct_bias = T, variant = T)
+
+pdf(file = paste0(outpath, "Outbreak_SI_inc_gamma.pdf"), width=4, height=7)
+si_plot_detail(incid_si_gamma_inc)
+dev.off()
+
+pdf(file = paste0(outpath, "CompareRt_SI_determ_inc.pdf"), height = 4, width=8)
+compare_rt(Rt_si_determ_inc, params)
+dev.off()
+pdf(file = paste0(outpath, "CompareRt_SI_sto_inc.pdf"), height = 4, width=8)
+compare_rt(Rt_si_sto_inc, params)
+dev.off()
+
+pdf(file = paste0(outpath, "Outbreak_SII_inc_gamma_determ.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_inc, Rt_sii_determ_inc)
+dev.off()
+pdf(file = paste0(outpath, "Outbreak_SII_inc_gamma_sto.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_inc, Rt_sii_sto_inc)
+dev.off()
+
+params[['R_val']] <- rev(seq(1, 2.2, by=1.2/tot_len))
+params[['R_val']] <- params[['R_val']][2:length(params[['R_val']])]
+params$R_val_variant <- 1.9
+incid_si_gamma_dec <- si_sim(params)
+incid_sii_gamma_dec <- sii_sim(params)
+
+Rt_si_determ_dec <- Rt_est(incid_si_gamma_dec, vals, params, deterministic = T, correct_bias = T, variant = F)
+Rt_si_sto_dec <- Rt_est(incid_si_gamma_dec, vals, params, deterministic = F, correct_bias = T, variant = F)
+Rt_sii_determ_dec <- Rt_est(incid_sii_gamma_dec, vals, params, deterministic = T, correct_bias = T, variant = T)
+Rt_sii_sto_dec <- Rt_est(incid_sii_gamma_dec, vals, params, deterministic = F, correct_bias = T, variant = T)
+
+pdf(file = paste0(outpath, "Outbreak_SI_dec_gamma.pdf"), width=4, height=7)
+si_plot_detail(incid_si_gamma_dec)
+dev.off()
+
+pdf(file = paste0(outpath, "CompareRt_SI_determ_dec.pdf"), height = 4, width=8)
+compare_rt(Rt_si_determ_dec, params)
+dev.off()
+pdf(file = paste0(outpath, "CompareRt_SI_sto_dec.pdf"), height = 4, width=8)
+compare_rt(Rt_si_sto_dec, params)
+dev.off()
+
+pdf(file = paste0(outpath, "Outbreak_SII_dec_gamma_determ.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_dec, Rt_sii_determ_dec)
+dev.off()
+pdf(file = paste0(outpath, "Outbreak_SII_dec_gamma_sto.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_dec, Rt_sii_sto_dec)
+dev.off()
+
+params[['R_val']] <- (0.5 * sin((1:tot_len)/1000)) + 1.2
+# params[['R_val']] <- params[['R_val']][2:length(params[['R_val']])]
+params$R_val_variant <- 1.9
+incid_si_gamma_sin <- si_sim(params)
+incid_sii_gamma_sin <- sii_sim(params)
+
+Rt_si_determ_sin <- Rt_est(incid_si_gamma_sin, vals, params, deterministic = T, correct_bias = T, variant = F)
+Rt_si_sto_sin <- Rt_est(incid_si_gamma_sin, vals, params, deterministic = F, correct_bias = T, variant = F)
+Rt_sii_determ_sin <- Rt_est(incid_sii_gamma_sin, vals, params, deterministic = T, correct_bias = T, variant = T)
+Rt_sii_sto_sin <- Rt_est(incid_sii_gamma_sin, vals, params, deterministic = F, correct_bias = T, variant = T)
+
+pdf(file = paste0(outpath, "Outbreak_SI_sin_gamma.pdf"), width=4, height=7)
+si_plot_detail(incid_si_gamma_sin)
+dev.off()
+
+pdf(file = paste0(outpath, "CompareRt_SI_determ_sin.pdf"), height = 4, width=8)
+compare_rt(Rt_si_determ_sin, params)
+dev.off()
+pdf(file = paste0(outpath, "CompareRt_SI_sto_sin.pdf"), height = 4, width=8)
+compare_rt(Rt_si_sto_sin, params)
+dev.off()
+
+pdf(file = paste0(outpath, "Outbreak_SII_sin_gamma_determ.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_sin, Rt_sii_determ_sin)
+dev.off()
+pdf(file = paste0(outpath, "Outbreak_SII_sin_gamma_sto.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_sin, Rt_sii_sto_sin)
+dev.off()
+
+params[['R_val']] <- -1 * (2/tot_len * (seq(1:tot_len) - (tot_len/2)))**2 + 2
+params$R_val_variant <- 1.8
+incid_si_gamma_x2 <- si_sim(params)
+incid_sii_gamma_x2 <- sii_sim(params)
+
+Rt_si_determ_x2 <- Rt_est(incid_si_gamma_x2, vals, params, deterministic = T, correct_bias = T, variant = F)
+Rt_si_sto_x2 <- Rt_est(incid_si_gamma_x2, vals, params, deterministic = F, correct_bias = T, variant = F)
+Rt_sii_determ_x2 <- Rt_est(incid_sii_gamma_x2, vals, params, deterministic = T, correct_bias = T, variant = T)
+Rt_sii_sto_x2 <- Rt_est(incid_sii_gamma_x2, vals, params, deterministic = F, correct_bias = T, variant = T)
+
+pdf(file = paste0(outpath, "Outbreak_SI_x2_gamma.pdf"), width=4, height=7)
+si_plot_detail(incid_si_gamma_x2)
+dev.off()
+
+pdf(file = paste0(outpath, "CompareRt_SI_determ_x2.pdf"), height = 4, width=8)
+compare_rt(Rt_si_determ_x2, params)
+dev.off()
+pdf(file = paste0(outpath, "CompareRt_SI_sto_x2.pdf"), height = 4, width=8)
+compare_rt(Rt_si_sto_x2, params)
+dev.off()
+
+pdf(file = paste0(outpath, "Outbreak_SII_x2_gamma_determ.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_x2, Rt_sii_determ_x2)
+dev.off()
+pdf(file = paste0(outpath, "Outbreak_SII_x2_gamma_sto.pdf"), width=4, height=7)
+sii_plot(incid_sii_gamma_x2, Rt_sii_sto_x2)
+dev.off()
+
+# params[["R_val"]] <- c(1.7, 0.9, 2.5)
+# incid_si_gamma_var <- si_sim(params)
 
 # params[["R_val"]] <- 1.7
 # params[["sim_type"]] <- "weibull"
 # incid_si_weibull_const <- si_sim(params)
 
-params[["R_val"]] <- c(1.7, 0.9, 1.3)
-params[["sim_type"]] <- "weibull"
-incid_si_weibull_var <- si_sim(params)
+# params[["R_val"]] <- c(1.7, 0.9, 1.3)
+# params[["sim_type"]] <- "weibull"
+# incid_si_weibull_var <- si_sim(params)
 
 # plot outbreaks si
-pdf(file = paste0(outpath, "Outbreak_SI_const_gamma.pdf"), width=4, height=7)
-si_plot_detail(incid_si_gamma_const)
-dev.off()
+# pdf(file = paste0(outpath, "Outbreak_SI_const_gamma.pdf"), width=4, height=7)
+# si_plot_detail(incid_si_gamma_const)
+# dev.off()
 
-pdf(file = paste0(outpath, "Outbreak_SI_var_gamma.pdf"), width=4, height=7)
-si_plot_detail(incid_si_gamma_var)
-dev.off()
+# pdf(file = paste0(outpath, "Outbreak_SI_var_gamma.pdf"), width=4, height=7)
+# si_plot_detail(incid_si_gamma_var)
+# dev.off()
 
 # pdf(file = paste0(outpath, "Outbreak_SI_const_weibull.pdf"), width=4, height=7)
 # si_plot_detail(incid_si_weibull_const)
 # dev.off()
 
-pdf(file = paste0(outpath, "Outbreak_SI_var_weibull.pdf"), width=7, height=7)
-si_plot_detail(incid_si_weibull_var)
-dev.off()
+# pdf(file = paste0(outpath, "Outbreak_SI_var_weibull.pdf"), width=7, height=7)
+# si_plot_detail(incid_si_weibull_var)
+# dev.off()
 
 
 
@@ -209,12 +350,23 @@ dev.off()
 ##################### SI Framework ###################################
 ######################################################################
 
-params$R_val <- c(1.3, 1.05)
+# params$R_val <- c(1.3, 1.05)
 params$R_val_variant <- 1.8
 
-# si_model <- si_sim(params)
-sii_model <- sii_sim(params)
-# ssii_model <- ssii_sim(params)
+params[["R_val"]] <- 1.4
+incid_sii_gamma_const <- sii_sim(params)
+
+params[['R_val']] <- seq(0.5, 2, by=1.5/tot_len)
+incid_sii_gamma_inc <- sii_sim(params)
+
+params[['R_val']] <- rev(seq(0.5, 2, by=1.5/tot_len))
+incid_sii_gamma_dec <- sii_sim(params)
+
+params[['R_val']] <- (0.5 * sin((1:tot_len)/1000)) + 1.2
+incid_sii_gamma_sin <- sii_sim(params)
+
+params[['R_val']] <- -1 * (2/tot_len * (seq(1:tot_len) - (tot_len/2)))**2 + 2
+incid_sii_gamma_x2 <- sii_sim(params)
 
 # Rt_si <- Rt_est(si_model, vals, params, deterministic = T, correct_bias = T, variant = F)
 Rt_sii <- Rt_est(sii_model, vals, params, deterministic = T, correct_bias = T, variant = T, sep_Rt = T)
