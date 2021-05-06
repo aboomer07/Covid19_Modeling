@@ -60,7 +60,7 @@ aggregation_error_plots <- function(params){
 		errors <- aggregation_error(params)
 		par(mfrow = c(1,2))
 		plot(errors$mean_hat$weibull~errors$deltas, type = "l", col = "red",
-			xlab = "Delta", ylab = expression(hat(mu)),
+			xlab = expression(paste("1/", Delta)), ylab = expression(hat(mu)),
 			ylim = c(params[['sim_mu']]-0.1, max(errors$mean_hat$weibull, errors$mean_hat$gamma, errors$mean_hat$norm)))
 		#axis(1, at=errors$deltas, labels=errors$deltas)
 		lines(errors$mean_hat$gamma~errors$deltas, col = "blue")
@@ -70,10 +70,14 @@ aggregation_error_plots <- function(params){
 			legend = c("weibull", "gamma", "normal", "true value"), 
 			col = c("red", "blue", "darkgoldenrod2", "red"),
 			lty = c(1, 1, 1, 2), 
-			cex = 0.7)
+			cex = 0.7,
+			xpd=TRUE,
+			horiz = TRUE,
+			bty = "n",
+			inset=c(0,1))
 
 		plot(errors$MSE_Rt$weibull~errors$deltas, type = "l", col = "red",
-			xlab = "Delta", ylab = "MSE",
+			xlab = expression(paste("1/", Delta)), ylab = "MSE",
 			ylim = c(min(errors$MSE_Rt$weibull, errors$MSE_Rt$gamma, errors$MSE_Rt$norm),
 			 max(errors$MSE_Rt$weibull, errors$MSE_Rt$gamma, errors$MSE_Rt$norm)))
 		#axis(1, at=errors$deltas, labels=errors$deltas)
@@ -83,7 +87,11 @@ aggregation_error_plots <- function(params){
 			legend = c("weibull", "gamma", "normal"), 
 			col = c("red", "blue", "darkgoldenrod2"),
 			lty = c(1, 1, 1), 
-			cex = 0.7)
+			cex = 0.7,
+			xpd=TRUE,
+			horiz = TRUE,
+			bty = "n",
+			inset=c(0,1))
 
 		return(errors)
 }
@@ -93,8 +101,8 @@ aggregation_error_plots <- function(params){
 types <- c("constant", "increasing", "decreasing", "panic", "cave")
 
 for (type in seq_along(types)){
-	params[["R_type"]] <- types[type]
-	pdf(file = paste0(outpath, "SerialIntervalBias_Rt", types[type], "2.pdf"),
+	params[['R_type']] <- types[type]
+	pdf(file = paste0(outpath, 'SerialIntervalBias_Rt', types[type], '.pdf'),
 		width=10, height=4)
 	aggregation_error_plots(params)	
 	dev.off()
