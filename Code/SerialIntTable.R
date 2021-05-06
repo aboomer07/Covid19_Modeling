@@ -18,7 +18,12 @@ serial_int_study <- function(params){
   # loop over sample sizes
   sample_size <- c(10, 20) #, 50, 100, 500)
 
+
+
   for (s in seq_along(sample_size)){
+
+    print(paste("Sample Size:", sample_size[s]))
+    pb <- txtProgressBar(min = 1, max = 1000, style = 3)
 
     params$num_people <- sample_size[s]
 
@@ -29,6 +34,8 @@ serial_int_study <- function(params){
 
     # repeat simulation 1000 times
     for (i in 1:100){
+      setTxtProgressBar(pb, i)
+
       data[i,]$sim_nr <- i
 
       # 1) Serial Interval simulation
@@ -85,4 +92,39 @@ serial_int_study <- function(params){
 
 
 
-test <- serial_int_study(params)
+create_table <- function(params){
+
+  # loop over true distribution types and different shapes of Rt
+
+  # setup
+  df <- data.frame(matrix(nrow = 0, ncol = 12))
+  colnames(df) <- c("sim_type", "R_type", "sample_size", "sim_nr",
+                   "mu_gamma", "mu_nonpar", "var_gamma", "var_nonpar",
+                   "MSE_gamma", "MSE_nonpar", "ME_gamma", "ME_nonpar")
+
+  serialint <- c("gamma", "weibull") # , "norm")
+  rtypes <- c("constant", "increasing") #, "decreasing", "cave", "panic")
+
+  for (s in serialint){
+
+    params$sim_type <- s
+    print(paste("True serial interval:", s))
+
+    for (r in rtypes){
+
+      params$R_type <- r
+      print(paste("R type:", r))
+
+      data <- serial_int_study(params)
+
+      df <- rbind(df, data)
+    }
+  }
+
+  return(df)
+}
+
+
+test <- create_table(params)
+
+
