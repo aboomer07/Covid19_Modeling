@@ -207,7 +207,7 @@ nour_sim_data <- function(params) {
   # aggregate to daily (avg = /delta)
   daily_infec <- data %>%
     group_by(days) %>%
-    summarise(infected_day = round(sum(infected)), R_val = mean(R_t))
+    summarise(infected_day = round(sum(infected)), R_val = mean(R_t), .groups = 'drop')
 
   return(daily_infec)
 }
@@ -357,33 +357,38 @@ plot_nonpara_eval <- function(true_dist, est_dist) {
 
 Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, variant = F, sep_Rt = F, sep_S = F) {
   
-  n_days <- params[['n_days']]; start <- params[['study_len']]
-  type <- params[['sim_type']]; start_variant <- params[["start_variant"]]
-  tau_m <- params[['tau_m']]; R_type <- params[['R_type']]
+  n_days <- params[['n_days']]; start <- params[['study_len']] + 1 # should start at start or start +1?
+  type <- params[['sim_type']]; start_variant <- params[["start_variant"]] +1
+  tau_m <- params[['tau_m']]; R_type <- params[['R_type']]; delta <- params[['delta']]
 
+  # note: df contains daily infections, nrow df is number of days
+
+  # different Rts?
   if (sep_Rt) {
-    data <- data.frame(matrix(nrow = nrow(df), ncol = 7))
+    data <- data.frame(matrix(nrow = n_days, ncol = 7))
     names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt', 'Est_Rt1', 'Est_Rt2')
+  } else{
+    data <- data.frame(matrix(nrow = n_days, ncol = 5))
+    names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt')
   }
-  data <- data.frame(matrix(nrow = nrow(df), ncol = 5))
-  names(data) <- c('Date', 'est_a', 'est_b', 'Rt', 'Est_Rt')
 
+  # R values
   if (variant){
-    data$Rt1 <- rep(df$R1_val)
+    data$Rt1 <- rep(df$R1_val)  # TODO: should be through RT_gen??
     data$Rt2 <- rep(df$R2_val)
   }
   else{
      data$Rt <- Rt_gen(R_type, n_days)
   }
 
-  data$Date <- seq(1, nrow(df))
+  data$Date <- seq(1, n_days)
   data$Est_Rt <- 1
-  data[data$Date <= start, ]$Est_Rt <- NA
+  data[data$Date < start, ]$Est_Rt <- NA
   if (sep_Rt) {
     data$Est_Rt1 <- 1
     data$Est_Rt2 <- 1
-    data[data$Date <= start, ]$Est_Rt1 <- NA
-    data[data$Date <= (start_variant + tau_m), ]$Est_Rt2 <- NA
+    data[data$Date < start, ]$Est_Rt1 <- NA
+    data[data$Date < (start_variant + tau_m), ]$Est_Rt2 <- NA
   }
 
   if (deterministic){
@@ -391,18 +396,18 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
     var <- params[['sim_var']]
 
     for (i in start:nrow(data)) {
-      if (data[i,]$Date > start) {
+      if (data[i,]$Date >= start) {
         t <- data[i,]$Date
 
-        omega <- rev(gen_distribution(t - 1, mean, var, type, 1)$omega)
+        omega <- rev(gen_distribution(tau_m, mean, var, type, 1)$omega)
         I <- df[which(df$days == t),]$infected_day
-        I_window <- df[df$days %in% 1:(t - 1),]$infected_day
+        I_window <- df[df$days %in% (t - tau_m):(t - 1),"infected_day"]
         data[i,]$Est_Rt <- (I) / (sum(I_window * omega))
         if (sep_Rt) {
           I1 <- df[which(df$days == t),]$I1_daily
           I2 <- df[which(df$days == t),]$I2_daily
-          I1_vec <- df[df$days %in% 1:(t - 1),]$I1_daily
-          I2_vec <- df[df$days %in% 1:(t - 1),]$I2_daily
+          I1_vec <- df[df$days %in% (t - tau_m):(t - 1),]$I1_daily
+          I2_vec <- df[df$days %in% (t - tau_m):(t - 1),]$I2_daily
           data$Est_Rt1[i] <- (I1) / (sum(I1_vec * omega))
           if (t > (start_variant + tau_m)) {
             data$Est_Rt2[i] <- (I2) / (sum(I2_vec * omega))
@@ -417,11 +422,11 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
     data$est_b <- rep(vals$rate, n_days)
 
     for (i in start:nrow(data)) {
-      if (data[i,]$Date <= start) {
+      if (data[i,]$Date < start) {
         data[i,]$Est_Rt <- NA
         }
       if (sep_Rt) {
-        if (data[i,]$Date <= start) {
+        if (data[i,]$Date < start) {
           data$Est_Rt1[i] <- NA
         }
         if (data$Date[i] < (start_variant + tau_m)) {
@@ -435,17 +440,17 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
         var <- vals$varhat
         t <- data[i,]$Date
 
-        omega <- rev(gen_distribution(t - 1, mean, var, type, 1)$omega)
+        omega <- rev(gen_distribution(tau_m, mean, var, type, 1)$omega)
         I <- df[which(df$days == t),]$infected_day
-        I_window <- df[df$days %in% 1:(t - 1),]$infected_day
+        I_window <- df[df$days %in% (t - tau_m):(t - 1),"infected_day"]
         data[i,]$Est_Rt <- (I) / (sum(I_window * omega))
         if (sep_Rt) {
           I1 <- df[which(df$days == t),]$I1_daily
           I2 <- df[which(df$days == t),]$I2_daily
-          I1_vec <- df[df$days %in% 1:(t - 1),]$I1_daily
-          I2_vec <- df[df$days %in% 1:(t - 1),]$I2_daily
+          I1_vec <- df[df$days %in% (t - tau_m):(t - 1),]$I1_daily
+          I2_vec <- df[df$days %in% (t - tau_m):(t - 1),]$I2_daily
           data$Est_Rt1[i] <- (I1) / (sum(I1_vec * omega))
-          if (t >= (start_variant + tau_m)) {
+          if (t > (start_variant + tau_m)) {
             data$Est_Rt2[i] <- (I2) / (sum(I2_vec * omega))
           }
         }
@@ -480,8 +485,9 @@ Rt_est <- function(df, vals, params, deterministic = F, correct_bias = F, varian
 }
 
 Rt_est_nonpara <- function(df, samps, bw, params, correct_bias = F, variant = F) {
-  start <- params[['study_len']]
-  n_days <- params[['n_days']]
+  start <- params$study_len +1
+  n_days <- params$n_days
+  study_len <- params$study_len
   data <- data.frame(matrix(nrow = n_days, ncol = 3))
   names(data) <- c('Date', 'Rt', 'Est_Rt')
 
@@ -497,16 +503,16 @@ Rt_est_nonpara <- function(df, samps, bw, params, correct_bias = F, variant = F)
   }
 
   for (i in start:nrow(data)) {
-    if (data[i,]$Date <= start) {
-      data[i,]$Est_Rt <- NA
+    if (data$Date[i] < start) {
+      data$Est_Rt[i] <- NA
     }
     else {
-      t <- data[i,]$Date
+      t <- data$Date[i]
 
-      dist <- rev(serial_ests_nonpara(samps, range = c(1, (t - 1)), bandwidth = bw)$y)
+      dist <- rev(serial_ests_nonpara(samps, range = c(1, study_len), bandwidth = bw)$y)
       I <- df[which(df$days == t),]$infected_day
-      I_window <- df[df$days %in% 1:(t - 1),]$infected_day
-      data[i,]$Est_Rt <- (I) / (sum(I_window * dist))
+      I_window <- df[df$days %in% (t - study_len):(t - 1),"infected_day"]
+      data$Est_Rt[i] <- (I) / (sum(I_window * dist))
     }
   }
   if (correct_bias){
