@@ -161,7 +161,7 @@ serial_ests_nonpara <- function(samps, range, bandwidth) {
   if (bandwidth == 'iqr'){
     h <- 0.9 * length(samps)^(-1 / 5) * (IQR(samps)/1.34)
   }
-  kernel_est <- bkde(samps, bandwidth = h, range.x = range, gridsize = max(range))
+  kernel_est <- bkde(samps, bandwidth = h, gridsize = max(range))
 }
 
 ###############################################################
