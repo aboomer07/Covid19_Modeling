@@ -91,6 +91,11 @@ Rt_gen <- function(R_type, n_days){
     Rt <- cave_func(1:n_days)
   }
 
+  #Make sure there are no negative values
+  for (t in seq_along(Rt)){
+      ifelse(Rt[t] < 0, Rt[t] <- 0, Rt[t] <- Rt[t])
+  }
+
   return(Rt)
 }
 
@@ -161,7 +166,7 @@ serial_ests_nonpara <- function(samps, range, bandwidth) {
   if (bandwidth == 'iqr'){
     h <- 0.9 * length(samps)^(-1 / 5) * (IQR(samps)/1.34)
   }
-  kernel_est <- bkde(samps, bandwidth = h, gridsize = max(range))
+  kernel_est <- bkde(samps, bandwidth = h, gridsize = max(range), range.x = range)
 }
 
 ###############################################################
